@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>loading – Spock no-op finder</title>
+
+    <style>
+      table {
+          width: 100%;
+          border-collapse: collapse;
+      }
+      table, th, td {
+          border: 1px solid black;
+      }
+      th, td {
+          padding: 8px;
+          text-align: left;
+      }
+      th {
+          background-color: #f2f2f2;
+      }
+      tr:nth-child(even) {
+          background-color: #f9f9f9;
+      }
+      h2 {
+          color: navy;
+      }
+      .ERROR {
+        color: red;
+      }
+      .WARN {
+        color: orange;
+      }
+      .MAYBE {
+        color: blue;
+      }
+      .SMELL {
+        color: purple;
+      }
+      #info-repo-name {
+        font-size: 38px;
+      }
+      #info-main-branch {
+        margin-left: 12px;
+        font-size: 20px;
+      }
+      .info-field {
+        font-weight: 600;
+      }
+      .file-name {
+        font-size: 24px;
+        margin-bottom: 6px;
+      }
+      .file-path-from-root {
+        font-size: 12px;
+        margin-left: 12px;
+      }
+      #aggregate-panel {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 20%;
+        height: 100%;
+        overflow-x: hidden;
+      }
+      #aggregate-panel-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 20%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, .6);
+      }
+      #report-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 80%;
+        height: 100%;
+        overflow: scroll;
+      }
+    </style>
+  
+  </head>
+  <body>
+    <script src="report-aggregate.js"></script>
+
+    <div id="aggregate-panel">
+      <ul>
+        <li><a href="#list-repos">list repos</a></li>
+        <li><a href="#group-by-team">group by team</a></li>
+      </ul>
+      <hr/>
+      <div id="info-aggr">
+        Number of repos: <span class="info-field" id="info-aggr-repo-count">loading</span><br/>
+        Number of Groovy files: <span class="info-field" id="info-aggr-file-count">loading</span><br/>
+        Number of methods parsed: <span class="info-field" id="info-aggr-method-count">loading</span><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;with at least one error: <span class="info-field" id="info-aggr-method-with-error-count">loading</span><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;with at least one error (excluding <span class="MAYBE">MAYBE</span> <img src="question-mark-icon.jpg" width=14 title="(Very) high chance of false positive, but might still be worth it to have a quick glance"/>): <span class="info-field" id="info-aggr-method-with-error-excl-maybe-count">loading</span><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;with at least one error (excluding <span class="MAYBE">MAYBE</span> and <span class="SMELL">SMELL</span> <img src="question-mark-icon.jpg" width=14 title="Different type of errors, excluding them for stats purpose"/>): <span class="info-field" id="info-aggr-method-with-error-excl-maybe-and-smell-count">loading</span><br/><br/>
+      </div>
+      <hr/>
+      Matches found: <span class="info-field" id="info-aggr-match-total-count">loading</span>
+      <ul style="margin-top: -0px;">
+        <li><span class="ERROR">ERROR</span>: <span class="info-field" id="info-aggr-match-error-count">loading</span></li>
+        <li><span class="SMELL">SMELL</span>: <span class="info-field" id="info-aggr-match-smell-count">loading</span></li>
+        <li><span class="WARN">WARN</span>: <span class="info-field" id="info-aggr-match-warn-count">loading</span></li>
+        <li><span class="MAYBE">MAYBE</span>: <span class="info-field" id="info-aggr-match-maybe-count">loading</span></li>
+      </ul>
+      <hr/>
+      <input checked type="checkbox" id="show-error" name="show-error" /><label for="show-error">show <span class="ERROR">ERROR</span> in report</label><br/>
+      <input checked type="checkbox" id="show-smell" name="show-smell" /><label for="show-smell">show <span class="SMELL">SMELL</span> in report</label><br/>
+      <input checked type="checkbox" id="show-warn" name="show-warn" /><label for="show-warn">show <span class="WARN">WARN</span> in report</label><br/>
+      <input type="checkbox" id="show-maybe" name="show-maybe" /><label for="show-maybe">show <span class="MAYBE">MAYBE</span> in report</label><br/>
+      <input type="checkbox" id="show-file-with-no-match" name="show-file-with-no-match" /><label for="show-file-with-no-match">show files with no match in report</label><br/>
+      <hr/>
+      <div id="dev-stuff" style="display: none;">
+        count ack'ed <span class="ERROR">ERROR</span>: <span id="ack-ERROR-count">0</span><br/>
+        count ack'ed <span class="SMELL">SMELL</span>: <span id="ack-SMELL-count">0</span><br/>
+        count ack'ed <span class="WARN">WARN</span>: <span id="ack-WARN-count">0</span><br/>
+        count ack'ed <span class="MAYBE">MAYBE</span>: <span id="ack-MAYBE-count">0</span><br/>
+        count false positive <span class="ERROR">ERROR</span>: <span id="falsePositive-ERROR-count">0</span><br/>
+        count false positive <span class="SMELL">SMELL</span>: <span id="falsePositive-SMELL-count">0</span><br/>
+        count false positive <span class="WARN">WARN</span>: <span id="falsePositive-WARN-count">0</span><br/>
+        count false positive <span class="MAYBE">MAYBE</span>: <span id="falsePositive-MAYBE-count">0</span><br/>
+        ack'ed or fp'ed in unique repos count: <span id="ackfp-in-unique-repos-count">0</span><br/>
+        ack'ed or fp'ed in unique methods count: <span id="ackfp-in-unique-methods-count">0</span><br/>
+      </div>
+      <button id="btn-show-dev-stuff" onclick="document.getElementById('dev-stuff').style.display='block'; document.getElementById('btn-show-dev-stuff').style.display='none';">show dev stuff</button>
+      <hr/>
+      <a id="list-repos">list repos</a>
+      <div id="aggregate-container"></div>
+      <hr/>
+      <a id="group-by-team">group by team</a>
+      <div id="group-by-team-container"></div>
+    </div>
+
+    <div id="aggregate-panel-overlay" onclick="displayReportAggregate()" style="visibility: hidden;"></div>
+
+    <div id="report-panel" style="visibility: hidden;">
+      <div style="margin-top: 36px;">
+        <a id="info-repo-url" target="_blank" href=""><span id="info-repo-name">loading</span></a><span id="info-main-branch">loading</span><br/>
+      </div>
+      <hr/>
+      <div id="info">
+        Number of Groovy files: <span class="info-field" id="info-file-count">loading</span><br/>
+        Number of methods parsed: <span class="info-field" id="info-method-count">loading</span><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;with at least one error: <span class="info-field" id="info-method-with-error-count">loading</span><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;with at least one error (excluding <span class="MAYBE">MAYBE</span> <img src="question-mark-icon.jpg" width=14 title="(Very) high chance of false positive, but can still be worth it to have a quick glance"/>): <span class="info-field" id="info-method-with-error-excl-maybe-count">loading</span><br/><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;with at least one error (excluding <span class="MAYBE">MAYBE</span> and <span class="SMELL">SMELL</span> <img src="question-mark-icon.jpg" width=14 title="Different type of errors, excluding them for stats purpose"/>): <span class="info-field" id="info-method-with-error-excl-maybe-and-smell-count">loading</span><br/><br/>
+      
+        Matches found: <span class="info-field" id="info-match-total-count">loading</span>
+        <ul style="margin-top: -0px;">
+          <li><span class="ERROR">ERROR</span>: <span class="info-field" id="info-match-error-count">loading</span></li>
+          <li><span class="ERROR">SMELL</span>: <span class="info-field" id="info-match-smell-count">loading</span></li>
+          <li><span class="WARN">WARN</span>: <span class="info-field" id="info-match-warn-count">loading</span></li>
+          <li><span class="MAYBE">MAYBE</span>: <span class="info-field" id="info-match-maybe-count">loading</span></li>
+        </ul>
+      </div>
+      <hr/>
+      <div id="report-container"></div>
+    </div>
+
+    <!-- <script src="noop-report.js"></script>
+    <script src="parse-csv.js"></script> -->
+    <script>
+      let sortBy = {
+        columnNumber: 4,
+        reverse: true,
+      };
+      let sortByGroupByTeam = {
+        columnNumber: 1,
+        reverse: true,
+      };
+
+      const aggregateTableHeader = () => `
+        <tr>
+          <th style="width: 34px">
+            #
+          </th>
+          <th style="width: 200px">
+            <img src="sort-up-${sortBy.columnNumber === 1 && !sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(1, false)" width=14 />
+            <img src="sort-down-${sortBy.columnNumber === 1 && sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(1, true)" width=14 /><br/>
+            Repo
+          </th>
+          <th style="width: 100px">
+            <img src="sort-up-${sortBy.columnNumber === 2 && !sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(2, false)" width=14 />
+            <img src="sort-down-${sortBy.columnNumber === 2 && sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(2, true)" width=14 /><br/>
+            Team
+          </th>
+          <th style="width: 114px">Action</th>
+          <th style="width: 85px">
+            <img src="sort-up-${sortBy.columnNumber === 4 && !sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(4, false)" width=14 />
+            <img src="sort-down-${sortBy.columnNumber === 4 && sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(4, true)" width=14 /><br/>
+            Total (e. <span class="MAYBE">M.</span>)
+          </th>
+          <th>
+            <img src="sort-up-${sortBy.columnNumber === 5 && !sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(5, false)" width=14 />
+            <img src="sort-down-${sortBy.columnNumber === 5 && sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(5, true)" width=14 /><br/>
+            <span class="ERROR">ERROR</span>
+          </th>
+          <th>
+            <img src="sort-up-${sortBy.columnNumber === 6 && !sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(6, false)" width=14 />
+            <img src="sort-down-${sortBy.columnNumber === 6 && sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(6, true)" width=14 /><br/>
+            <span class="SMELL">SMELL</span>
+          </th>
+          <th>
+            <img src="sort-up-${sortBy.columnNumber === 7 && !sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(7, false)" width=14 />
+            <img src="sort-down-${sortBy.columnNumber === 7 && sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(7, true)" width=14 /><br/>
+            <span class="WARN">WARN</span>
+          </th>
+          <th style="width: 78px">
+            <img src="sort-up-${sortBy.columnNumber === 8 && !sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(8, false)" width=14 />
+            <img src="sort-down-${sortBy.columnNumber === 8 && sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(8, true)" width=14 /><br/>
+            <span class="MAYBE">MAYBE <img src="question-mark-icon.jpg" width=14 title="(Very) high chance of false positive, but might still be worth it to have a quick glance"/></span>
+          </th>
+          <th>
+            <img src="sort-up-${sortBy.columnNumber === 9 && !sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(9, false)" width=14 />
+            <img src="sort-down-${sortBy.columnNumber === 9 && sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(9, true)" width=14 /><br/>
+            Method >0 (e. <span class="MAYBE">M.</span>)
+          </th>
+          <th>
+            <img src="sort-up-${sortBy.columnNumber === 10 && !sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(10, false)" width=14 />
+            <img src="sort-down-${sortBy.columnNumber === 10 && sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(10, true)" width=14 /><br/>
+            Method >0 (e. <span class="MAYBE">M.</span> & <span class="SMELL">S.</span>)
+          </th>
+        </tr>
+      `;
+      const groupByTeamTableHeader = () => `
+      <tr>
+        <th>#</th>
+        <th style="width: 200px">
+          <img src="sort-up-${sortByGroupByTeam.columnNumber === 0 && !sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(0, false)" width=14 />
+          <img src="sort-down-${sortByGroupByTeam.columnNumber === 0 && sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(0, true)" width=14 /><br/>
+          Team
+        </th>
+        <th style="width: 86px">
+          <img src="sort-up-${sortByGroupByTeam.columnNumber === 1 && !sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(1, false)" width=14 />
+          <img src="sort-down-${sortByGroupByTeam.columnNumber === 1 && sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(1, true)" width=14 /><br/>
+          Total (e. <span class="MAYBE">M.</span>)
+        </th>
+        <th>
+          <img src="sort-up-${sortByGroupByTeam.columnNumber === 2 && !sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(2, false)" width=14 />
+          <img src="sort-down-${sortByGroupByTeam.columnNumber === 2 && sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(2, true)" width=14 /><br/>
+          <span class="ERROR">ERROR</span>
+        </th>
+        <th>
+          <img src="sort-up-${sortByGroupByTeam.columnNumber === 3 && !sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(3, false)" width=14 />
+          <img src="sort-down-${sortByGroupByTeam.columnNumber === 3 && sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(3, true)" width=14 /><br/>
+          <span class="SMELL">SMELL</span>
+        </th>
+        <th>
+          <img src="sort-up-${sortByGroupByTeam.columnNumber === 4 && !sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(4, false)" width=14 />
+          <img src="sort-down-${sortByGroupByTeam.columnNumber === 4 && sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(4, true)" width=14 /><br/>
+          <span class="WARN">WARN</span>
+        </th>
+        <th>
+          <img src="sort-up-${sortByGroupByTeam.columnNumber === 5 && !sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(5, false)" width=14 />
+          <img src="sort-down-${sortByGroupByTeam.columnNumber === 5 && sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(5, true)" width=14 /><br/>
+          <span class="MAYBE">MAYBE</span>
+        </th>
+        <th style="width: 126px">
+          <img src="sort-up-${sortByGroupByTeam.columnNumber === 6 && !sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(6, false)" width=14 />
+          <img src="sort-down-${sortByGroupByTeam.columnNumber === 6 && sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(6, true)" width=14 /><br/>
+          Method >0 (e. <span class="MAYBE">M.</span>)
+        </th>
+        <th style="width: 160px">
+          <img src="sort-up-${sortByGroupByTeam.columnNumber === 7 && !sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(7, false)" width=14 />
+          <img src="sort-down-${sortByGroupByTeam.columnNumber === 7 && sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(7, true)" width=14 /><br/>
+          Method >0 (e. <span class="MAYBE">M.</span> & <span class="SMELL">S.</span>)
+        </th>
+      </tr>
+      `;
+      const reportTableHeader = `
+        <tr>
+          <th>Ack</th>
+          <th>Severity</th>
+          <th>Line number</th>
+          <th>Method name</th>
+          <th>Expression</th>
+          <th>Scope type</th>
+          <th>Statement class</th>
+          <th title="Mark as false positive (for stats purpose)">FP</th>
+          </tr>
+      `;
+
+      const checkVisited = {
+        'ack_ERROR': {},
+        'ack_SMELL': {},
+        'ack_WARN': {},
+        'ack_MAYBE': {},
+        'falsePositive_ERROR': {},
+        'falsePositive_SMELL': {},
+        'falsePositive_WARN': {},
+        'falsePositive_MAYBE': {},
+      };
+      const countCheckboxes = {
+        'ack_ERROR': 0,
+        'ack_SMELL': 0,
+        'ack_WARN': 0,
+        'ack_MAYBE': 0,
+        'falsePositive_ERROR': 0,
+        'falsePositive_SMELL': 0,
+        'falsePositive_WARN': 0,
+        'falsePositive_MAYBE': 0,
+      }
+      const ackFpInUniqueRepos = {};
+      const ackFpInUniqueMethods = {};
+
+      function checkMatch(checkboxElem, checkType, hash, severity, methodName, reportName) {
+        checkVisited[checkType + "_" + severity][hash] = checkboxElem.currentTarget.checked;
+        countCheckboxes[checkType + "_" + severity] += (checkboxElem.currentTarget.checked ? 1 : -1);
+        if (ackFpInUniqueMethods[methodName] === undefined) {
+          ackFpInUniqueMethods[methodName] = 0;
+        } 
+        ackFpInUniqueMethods[methodName] = (checkboxElem.currentTarget.checked ? 1 : -1);
+        if (ackFpInUniqueRepos[reportName] === undefined) {
+          ackFpInUniqueRepos[reportName] = 0;
+        } 
+        ackFpInUniqueRepos[reportName] = (checkboxElem.currentTarget.checked ? 1 : -1);
+
+        document.getElementById(checkType + "-" + severity + '-count').innerText = countCheckboxes[checkType + "_" + severity];
+        document.getElementById('ackfp-in-unique-methods-count').innerText = Object.values(ackFpInUniqueMethods).filter(a => a > 0).length;
+        document.getElementById('ackfp-in-unique-repos-count').innerText = Object.values(ackFpInUniqueRepos).filter(a => a > 0).length;
+      }
+      function isChecked(checkType, hash, severity) {
+        return checkVisited[checkType + "_" + severity][hash];
+      }
+
+      function hashMatch(match) {
+        const string = match.methodName + match.text + match.scopeType;
+        let hash = 0;
+        if (string.length == 0) {
+          return hash;
+        }
+        for (i = 0; i < string.length; i++) {
+            char = string.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return hash;
+      }
+
+      function createReportTableRow(reportName, data, file) {
+        return `
+          <tr>
+            <td><input type="checkbox" ${isChecked('ack', hashMatch(data), data.severity) ? "checked" : ""} onchange="(function(e){checkMatch(e, 'ack', '${hashMatch(data)}', '${data.severity}', '${data.methodName}', '${reportName}')})(event)"></td>
+            <td class="${data.severity}">${data.severity}</td>
+            <td>
+              ${data.lineNumber}
+              <img width=18 src="copy-paste-icon.jpg" onclick="copyToClipboard('${data.pathFromRepoRoot + ":" + data.lineNumber}')"/>
+              <a href="${file.githubUrl + '#L' + data.lineNumber}" target="_blank"><img width=18 src="github-icon.jpg"/></a>
+            </td>
+            <td>${data.methodName.split(':')[2]}</td>
+            <td>${data.text}</td>
+            <td>${data.scopeType}</td>
+            <td>${data.statementClass}</td>
+            <td><input type="checkbox" ${isChecked('falsePositive', hashMatch(data), data.severity) ? "checked" : ""} onchange="(function(e){checkMatch(e, 'falsePositive', '${hashMatch(data)}', '${data.severity}', '${data.methodName}', '${reportName}')})(event)"></td>
+          </tr>`;
+      }
+
+      function setSortBy(cn, rev) {
+        sortBy = {
+          columnNumber: cn,
+          reverse: rev
+        };
+        displayReportAggregate();
+      }
+
+      function setSortByGroupByTeam(cn, rev) {
+        sortByGroupByTeam = {
+          columnNumber: cn,
+          reverse: rev
+        };
+        displayReportAggregate();
+      }
+
+      function displayReportAggregate() {
+        document.getElementById('aggregate-panel').style.width = '100%';
+        document.getElementById('aggregate-panel-overlay').style.visibility = 'hidden';
+        document.getElementById('report-panel').style.visibility = 'hidden';
+        document.title = "Spock no-op finder";
+
+        const tableRows = [];
+        let fileCount = 0;
+        let methodCount = 0;
+        let methodWithErrorCount = 0;
+        let methodWithErrorExclMaybeCount = 0;
+        let methodWithErrorExclMaybeAndSmellCount = 0;
+        let matchTotalCount = 0;
+        let matchErrorCount = 0;
+        let matchSmellCount = 0;
+        let matchWarnCount = 0;
+        let matchMaybeCount = 0;
+        let teamHist = {};
+        Object.keys(reportAggregate).forEach(reportKey => {
+          const report = reportAggregate[reportKey];
+          const tableRow = [];
+          tableRow.push("X");
+          tableRow.push(reportKey);
+          tableRow.push(report.repo.team);
+          tableRow.push('<button onclick="displayReport(\'' + reportKey + '\')">OPEN REPORT</button>');
+          tableRow.push(report.matchCountPerSeverity.total - report.matchCountPerSeverity.MAYBE);
+          tableRow.push(report.matchCountPerSeverity.ERROR);
+          tableRow.push(report.matchCountPerSeverity.SMELL);
+          tableRow.push(report.matchCountPerSeverity.WARN);
+          tableRow.push(report.matchCountPerSeverity.MAYBE);
+          tableRow.push(report.methodsWithAtLeastOneFailureExclMaybe);
+          tableRow.push(report.methodsWithAtLeastOneFailureExclMaybeAndSmell);
+          tableRows.push(tableRow);
+
+          fileCount += Object.keys(report.files).length;
+          methodCount += Object.keys(report.methods).length;
+          methodWithErrorCount += report.methodsWithAtLeastOneFailure;
+          methodWithErrorExclMaybeCount += report.methodsWithAtLeastOneFailureExclMaybe;
+          methodWithErrorExclMaybeAndSmellCount += report.methodsWithAtLeastOneFailureExclMaybeAndSmell;
+          matchTotalCount += report.matchCountPerSeverity['total'];
+          matchErrorCount += report.matchCountPerSeverity['ERROR'];
+          matchSmellCount += report.matchCountPerSeverity['SMELL'];
+          matchWarnCount += report.matchCountPerSeverity['WARN'];
+          matchMaybeCount += report.matchCountPerSeverity['MAYBE'];
+
+          report.repo.team.split(',').forEach(team => {
+            if (teamHist[team] === undefined) {
+              teamHist[team] = {
+                matchTotal: 0,
+                matchError: 0,
+                matchSmell: 0,
+                matchWarn: 0,
+                matchMaybe: 0,
+                methodsWithAtLeastOneFailureExclMaybe: 0,
+                methodsWithAtLeastOneFailureExclMaybeAndSmell: 0,
+              }
+            }
+            teamHist[team].matchTotal += report.matchCountPerSeverity['total'];
+            teamHist[team].matchError += report.matchCountPerSeverity['ERROR'];
+            teamHist[team].matchSmell += report.matchCountPerSeverity['SMELL'];
+            teamHist[team].matchWarn += report.matchCountPerSeverity['WARN'];
+            teamHist[team].matchMaybe += report.matchCountPerSeverity['MAYBE'];
+            teamHist[team].methodsWithAtLeastOneFailureExclMaybe += report.methodsWithAtLeastOneFailureExclMaybe;
+            teamHist[team].methodsWithAtLeastOneFailureExclMaybeAndSmell += report.methodsWithAtLeastOneFailureExclMaybeAndSmell;
+          });
+        });
+        sortByNthColumn(tableRows, sortBy);
+        let tableHtml = '<table style="width: 1282px">' + aggregateTableHeader();
+        let i = 1;
+        tableRows.forEach(row => {
+          tableHtml += createAggregateTableRow(row, i++);
+        })
+        tableHtml += "</table>";
+        document.getElementById('aggregate-container').innerHTML = tableHtml;
+
+        document.getElementById('info-aggr-repo-count').innerText = Object.keys(reportAggregate).length;
+        document.getElementById('info-aggr-file-count').innerText = fileCount;
+        document.getElementById('info-aggr-method-count').innerText = methodCount;
+        document.getElementById('info-aggr-method-with-error-count').innerText = methodWithErrorCount + ' (' + (methodWithErrorCount/methodCount*100).toFixed(2) + '%)';
+        document.getElementById('info-aggr-method-with-error-excl-maybe-count').innerText = methodWithErrorExclMaybeCount + ' (' + (methodWithErrorExclMaybeCount/methodCount*100).toFixed(2) + '%)';
+        document.getElementById('info-aggr-method-with-error-excl-maybe-and-smell-count').innerText = methodWithErrorExclMaybeAndSmellCount + ' (' + (methodWithErrorExclMaybeAndSmellCount/methodCount*100).toFixed(2) + '%)';
+        document.getElementById('info-aggr-match-total-count').innerText = matchTotalCount;
+        document.getElementById('info-aggr-match-error-count').innerText = matchErrorCount;
+        document.getElementById('info-aggr-match-smell-count').innerText = matchSmellCount;
+        document.getElementById('info-aggr-match-warn-count').innerText = matchWarnCount;
+        document.getElementById('info-aggr-match-maybe-count').innerText = matchMaybeCount;
+
+        const groupByTableRows = [];
+        Object.keys(teamHist).forEach(teamName => {
+          const team = teamHist[teamName];
+          const row = [];
+          row.push(teamName);
+          row.push(team.matchTotal - team.matchMaybe);
+          row.push(team.matchError);
+          row.push(team.matchSmell);
+          row.push(team.matchWarn);
+          row.push(team.matchMaybe);
+          row.push(team.methodsWithAtLeastOneFailureExclMaybe);
+          row.push(team.methodsWithAtLeastOneFailureExclMaybeAndSmell);
+          groupByTableRows.push(row);
+        });
+        sortByNthColumn(groupByTableRows, sortByGroupByTeam);
+        let groupByTableHtml = '<table style="width: 966px;">' + groupByTeamTableHeader();
+        i = 1;
+        groupByTableRows.forEach(tableRow => {
+          groupByTableHtml += `
+          <tr>
+            <td>${i++}</td>
+            <td>${tableRow[0]}</td>
+            <td>${tableRow[1]}</td>
+            <td>${tableRow[2]}</td>
+            <td>${tableRow[3]}</td>
+            <td>${tableRow[4]}</td>
+            <td>${tableRow[5]}</td>
+            <td>${tableRow[6]}</td>
+            <td>${tableRow[7]}</td>
+          </tr>
+          `;
+        });
+        groupByTableHtml += "</table>";
+        document.getElementById('group-by-team-container').innerHTML = groupByTableHtml;
+      }
+
+      function createAggregateTableRow(row, i) {
+        return `
+          <tr>
+            <td>${i}</td>
+            <td>${row[1]}</td>
+            <td>${row[2]}</td>
+            <td>${row[3]}</td>
+            <td>${row[4]}</td>
+            <td>${row[5]}</td>
+            <td>${row[6]}</td>
+            <td>${row[7]}</td>
+            <td>${row[8]}</td>
+            <td>${row[9]}</td>
+            <td>${row[10]}</td>
+          </tr>
+        `;
+      }
+  
+      function sortByNthColumn(arr, sortBy) {
+        const n = sortBy.columnNumber;
+        const reverse = sortBy.reverse ? -1 : 1;
+
+        return arr.sort((a, b) => {
+          let valA = a[n];
+          let valB = b[n];
+
+          if (!isNaN(parseFloat(valA)) && !isNaN(parseFloat(valB))) {
+            return (valA - valB) * reverse;
+          } else {
+            return valA.toString().localeCompare(valB.toString()) * reverse;
+          }
+        });
+      }
+
+      function displayReport(reportName) {
+        document.getElementById('aggregate-panel').style.width = '20%';
+        document.getElementById('aggregate-panel-overlay').style.visibility = 'visible';
+        document.getElementById('report-panel').style.visibility = 'visible';
+
+        const showError = document.getElementById('show-error').checked;
+        const showSmell = document.getElementById('show-smell').checked;
+        const showWarn = document.getElementById('show-warn').checked;
+        const showMaybe = document.getElementById('show-maybe').checked;
+        const showFileWithNoMatch = document.getElementById('show-file-with-no-match').checked;
+
+        const report = reportAggregate[reportName];
+        console.log(report);
+
+        document.title = report.repo.name + " – Spock no-op finder";
+        document.getElementById('info-repo-name').innerText = report.repo.name;
+        document.getElementById('info-repo-url').href = report.repo.url;
+        document.getElementById('info-main-branch').innerText = report.repo.mainBranch;
+        Object.entries(report.matchCountPerSeverity).forEach(entry => {
+          const id = 'info-match-' + entry[0] + '-count';
+          const el = document.getElementById('info-match-' + entry[0].toLowerCase() + '-count');
+          if (el === null) console.log('no element with id "' + id + '"');
+          else el.innerText = entry[1];
+        })
+        document.getElementById('info-file-count').innerText = Object.keys(report.files).length;
+        document.getElementById('info-method-count').innerText = Object.keys(report.methods).length;
+        document.getElementById('info-method-with-error-count').innerText = report.methodsWithAtLeastOneFailure;
+        document.getElementById('info-method-with-error-excl-maybe-count').innerText = report.methodsWithAtLeastOneFailureExclMaybe;
+        document.getElementById('info-method-with-error-excl-maybe-and-smell-count').innerText = report.methodsWithAtLeastOneFailureExclMaybeAndSmell;
+
+        let containerContent = "";
+        const sortedFiles = report.sortedFiles;
+        sortedFiles.sort((a, b) => {
+          const countA = (showError ? a.matches.filter(m => m.severity === 'ERROR').length : 0)
+            + (showSmell ? a.matches.filter(m => m.severity === 'SMELL').length : 0)
+            + (showWarn ? a.matches.filter(m => m.severity === 'WARN').length : 0)
+            + (showMaybe ? a.matches.filter(m => m.severity === 'MAYBE').length : 0)
+          const countB = (showError ? b.matches.filter(m => m.severity === 'ERROR').length : 0)
+            + (showSmell ? b.matches.filter(m => m.severity === 'SMELL').length : 0)
+            + (showWarn ? b.matches.filter(m => m.severity === 'WARN').length : 0)
+            + (showMaybe ? b.matches.filter(m => m.severity === 'MAYBE').length : 0)
+          return countB - countA;
+        })
+        sortedFiles.forEach(fileObj => {
+
+            if (fileObj.matches) {
+              const countError = fileObj.matches.filter(m => m.severity === 'ERROR').length;
+              const countSmell = fileObj.matches.filter(m => m.severity === 'SMELL').length;
+              const countWarn = fileObj.matches.filter(m => m.severity === 'WARN').length;
+              const countMaybe = fileObj.matches.filter(m => m.severity === 'MAYBE').length;
+              if (showFileWithNoMatch || (showError && countError > 0) || (showSmell && countSmell > 0) || (showWarn && countWarn > 0) || (showMaybe && countMaybe > 0)) {
+                const fileHeader = `<div><span class="file-name"><a id="info-repo-url" target="_blank" href="${fileObj.file.githubUrl}">${fileObj.file.name}</a></span><span class="file-path-from-root">${fileObj.file.pathFromRepoRoot}</span></div>`;
+                if (fileObj.matches.length > 0) {
+                  let tableContent = '<table>' + reportTableHeader;
+
+                  fileObj.matches.forEach(match => {
+                    if ((showError && match.severity === 'ERROR') || (showSmell && match.severity === 'SMELL') || (showWarn && match.severity === 'WARN') || (showMaybe && match.severity === 'MAYBE')) {
+                      tableContent += createReportTableRow(reportName, match, report.files[match.pathFromRepoRoot]);
+                    }
+                  });
+                  tableContent += '</table><hr/>';
+
+                  containerContent += `${fileHeader}${tableContent}`;
+                } else {
+                  containerContent += fileHeader + "<i>no match</i><hr/>";
+                }
+              }
+            } else {
+              console.warn("report " + reportName + " has no match");
+            }
+  
+
+        });
+        document.getElementById('report-container').innerHTML = containerContent;
+        document.getElementById('report-panel').scrollTop = 0;
+      }
+
+      function copyToClipboard(text) {
+        navigator.clipboard.writeText(text)
+          .then(() => {
+              console.log('Text copied to clipboard');
+          })
+          .catch(err => {
+              console.error('Failed to copy text: ', err);
+          });
+      }
+
+      window.onload = displayReportAggregate;
+    </script>
+
+  </body>
+</html>

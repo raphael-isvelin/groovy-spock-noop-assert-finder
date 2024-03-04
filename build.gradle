@@ -1,0 +1,44 @@
+plugins {
+    id 'java'
+    id 'groovy'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+group = 'com.github.raphael.isvelin'
+version = '0.2'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+//    implementation 'org.apache.groovy:groovy:3.0.11'
+    implementation "org.codehaus.groovy:groovy-all:3.0.11"
+
+    implementation platform('org.junit:junit-bom:5.9.1')
+    implementation 'org.junit.jupiter:junit-jupiter'
+
+    implementation 'org.spockframework:spock-core'
+    implementation 'org.spockframework:spock-junit4:2.0-groovy-3.0'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+application {
+    mainClass = 'com.github.raphael.isvelin.ATL'
+}
+
+run {
+    if (project.hasProperty('args')) {
+        args project.args.split(',')
+    }
+}
+
+shadowJar {
+    archiveBaseName.set("noop-finder")
+    archiveVersion.set(version.toString())
+    archiveClassifier.set('')
+}
