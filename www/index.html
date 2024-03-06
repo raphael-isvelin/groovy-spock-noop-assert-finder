@@ -274,12 +274,13 @@
         <tr>
           <th>Ack</th>
           <th>Severity</th>
-          <th>Line number</th>
+          <th style="width: 70px;">Line number</th>
           <th>Method name</th>
           <th>Expression</th>
           <th>Scope type</th>
           <th>Statement class</th>
           <th title="Mark as false positive (for stats purpose)">FP</th>
+          <th title="Match ID, mainly used by the exclude list">ID</th>
           </tr>
       `;
 
@@ -355,6 +356,9 @@
             <td>${data.scopeType}</td>
             <td>${data.statementClass}</td>
             <td><input type="checkbox" ${isChecked('falsePositive', hashMatch(data), data.severity) ? "checked" : ""} onchange="(function(e){checkMatch(e, 'falsePositive', '${hashMatch(data)}', '${data.severity}', '${data.methodName}', '${reportName}')})(event)"></td>
+            <td>
+              <img width=18 src="copy-paste-icon.jpg" onclick="copyToClipboard('${data.id}')"/>
+            </td>
           </tr>`;
       }
 

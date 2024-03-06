@@ -1,5 +1,9 @@
 #!/bin/sh
 export PATH_TO_SPOCK_NOOP_FINDER="$PWD"
+
+export EXCLUDE_LIST_MATCH_IDS="`cat $PATH_TO_SPOCK_NOOP_FINDER/match-ids.exclude`"
+export EXCLUDE_LIST_FILE_PATHS="`cat $PATH_TO_SPOCK_NOOP_FINDER/file-paths.exclude`"
+
 alias noop='java -jar $PATH_TO_SPOCK_NOOP_FINDER/build/libs/noop-finder-0.2.jar'
 alias noopconv='node $PATH_TO_SPOCK_NOOP_FINDER/parsers/parse-csv.node.js'
 alias noopaggr='node $PATH_TO_SPOCK_NOOP_FINDER/parsers/aggregate-reports.node.js'

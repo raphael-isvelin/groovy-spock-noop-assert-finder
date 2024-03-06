@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
+const excludeListMatchIds = process.env.EXCLUDE_LIST_MATCH_IDS === undefined ? [] : process.env.EXCLUDE_LIST_MATCH_IDS.split('\n');
+const excludeListFilePaths = process.env.EXCLUDE_LIST_FILE_PATHS === undefined ? [] : process.env.EXCLUDE_LIST_FILE_PATHS.split('\n');
+
 function parseCsv(csv) {
     let cwd, repo, repoUrl, mainBranch;
     const errors = [];
@@ -85,13 +88,16 @@ function parseCsv(csv) {
                     statementClass: parts[5],
                     text: parts[6],
                 };
-                ++methods[currentPathFromRepoRoot + ":" + parts[2]];
-                matches[currentPathFromRepoRoot].push(match);
-                if (match.severity !== "MAYBE") {
-                    ++methodsExclMaybe[currentPathFromRepoRoot + ":" + parts[2]];
-                }
-                if (match.severity !== "MAYBE" && match.severity !== "SMELL") {
-                    ++methodsExclMaybeAndSmell[currentPathFromRepoRoot + ":" + parts[2]];
+                match['id'] = hashMatch(match);
+                if (!isMatchInExcludeList(repo, match)) {
+                    ++methods[currentPathFromRepoRoot + ":" + parts[2]];
+                    matches[currentPathFromRepoRoot].push(match);
+                    if (match.severity !== "MAYBE") {
+                        ++methodsExclMaybe[currentPathFromRepoRoot + ":" + parts[2]];
+                    }
+                    if (match.severity !== "MAYBE" && match.severity !== "SMELL") {
+                        ++methodsExclMaybeAndSmell[currentPathFromRepoRoot + ":" + parts[2]];
+                    }
                 }
             }
         });
@@ -146,6 +152,18 @@ function parseCsv(csv) {
     }
 }
 
+function isMatchInExcludeList(repoName, match) {
+    if (excludeListMatchIds.indexOf(match.id + "") !== -1) {
+        console.log("Excluding match " + match.id + " (" + match.pathFromRepoRoot + ":" + match.lineNumber + ") because ID is in exclude list");
+        return true;
+    }
+    if (excludeListFilePaths.indexOf(repoName + ":" + match.pathFromRepoRoot) !== -1) {
+        console.log("Excluding match " + match.id + " from file " + match.pathFromRepoRoot + " because file path is in exclude list");
+        return true;
+    }
+    return false;
+}
+
 function main() {
     let inputFilePath = process.argv[2];
 
@@ -168,6 +186,24 @@ function main() {
     fs.writeFileSync(outputFilePath, 'const report = ' + JSON.stringify(result, null, 2) + '; module.exports.report = report;');
 
     console.log(`Report generated at ${outputFilePath}`);
+}
+
+function hashMatch(match) {
+    const str = match.severity + match.pathFromRepoRoot + match.methodName + match.lineNumber + match.scopeType + match.statementClass + match.text;
+    return str.hashCode();
+}
+
+String.prototype.hashCode = function() {
+    let hash = 0, i, chr;
+    if (this.length === 0) {
+        return hash;
+    }
+    for (i = 0; i < this.length; i++) {
+        chr = this.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0;
+    }
+    return hash;
 }
 
 main();

@@ -99,3 +99,7 @@ you might want to display which team each repo belongs to, instead of just `UNKN
 To do this, update the `writeteam` method in the `install-in-local-shell.sh` script. (Depends on your setup, but you might want to simply use a `CODEOWNERS` file if present; a company-wide config repository; a hardcoded lookup table; etc.)
 
 Or instead, you can also add the whole repo as a submodule of another repo, create your own installer script, which will source this one, but override the `writeteam` function. This will also **allow you to publish the report with e.g. GitHub Pages**.
+
+# Excluding matches
+
+If you've manually detected false positives, or want to exclude a match from the file report for any other reason, you can update the `file-paths.exclude` and `match-ids.exclude` files.
