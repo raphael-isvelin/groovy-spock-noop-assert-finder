@@ -284,6 +284,7 @@
           </tr>
       `;
 
+      const falsePositives = {}
       const checkVisited = {
         'ack_ERROR': {},
         'ack_SMELL': {},
@@ -310,6 +311,12 @@
       function checkMatch(checkboxElem, checkType, hash, severity, methodName, reportName) {
         checkVisited[checkType + "_" + severity][hash] = checkboxElem.currentTarget.checked;
         countCheckboxes[checkType + "_" + severity] += (checkboxElem.currentTarget.checked ? 1 : -1);
+        if (checkType === 'falsePositive') {
+          if (checkboxElem.currentTarget.checked) falsePositives[hash] = true;
+          else delete falsePositives[hash];
+          console.log('false positives:\n' + Object.keys(falsePositives).join('\n'));
+        }
+        countCheckboxes[checkType + "_" + severity] += (checkboxElem.currentTarget.checked ? 1 : -1);
         if (ackFpInUniqueMethods[methodName] === undefined) {
           ackFpInUniqueMethods[methodName] = 0;
         } 
@@ -327,24 +334,10 @@
         return checkVisited[checkType + "_" + severity][hash];
       }
 
-      function hashMatch(match) {
-        const string = match.methodName + match.text + match.scopeType;
-        let hash = 0;
-        if (string.length == 0) {
-          return hash;
-        }
-        for (i = 0; i < string.length; i++) {
-            char = string.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        return hash;
-      }
-
       function createReportTableRow(reportName, data, file) {
         return `
           <tr>
-            <td><input type="checkbox" ${isChecked('ack', hashMatch(data), data.severity) ? "checked" : ""} onchange="(function(e){checkMatch(e, 'ack', '${hashMatch(data)}', '${data.severity}', '${data.methodName}', '${reportName}')})(event)"></td>
+            <td><input type="checkbox" ${isChecked('ack', data.id, data.severity) ? "checked" : ""} onchange="(function(e){checkMatch(e, 'ack', '${data.id}', '${data.severity}', '${data.methodName}', '${reportName}')})(event)"></td>
             <td class="${data.severity}">${data.severity}</td>
             <td>
               ${data.lineNumber}
@@ -355,7 +348,7 @@
             <td>${data.text}</td>
             <td>${data.scopeType}</td>
             <td>${data.statementClass}</td>
-            <td><input type="checkbox" ${isChecked('falsePositive', hashMatch(data), data.severity) ? "checked" : ""} onchange="(function(e){checkMatch(e, 'falsePositive', '${hashMatch(data)}', '${data.severity}', '${data.methodName}', '${reportName}')})(event)"></td>
+            <td><input type="checkbox" ${isChecked('falsePositive', data.id, data.severity) ? "checked" : ""} onchange="(function(e){checkMatch(e, 'falsePositive', '${data.id}', '${data.severity}', '${data.methodName}', '${reportName}')})(event)"></td>
             <td>
               <img width=18 src="copy-paste-icon.jpg" onclick="copyToClipboard('${data.id}')"/>
             </td>
