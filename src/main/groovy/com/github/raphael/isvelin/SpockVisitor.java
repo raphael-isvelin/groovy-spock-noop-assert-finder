@@ -304,6 +304,15 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
                 //   (and I think it's fair game when e.g. making a mock data object)
             }
         }
+        if (expression.getExpression() instanceof BinaryExpression be
+                && be.getOperation().getText().equals(">>")
+                && be.getLeftExpression() instanceof MethodCallExpression
+                && (be.getRightExpression() instanceof MethodCallExpression || be.getRightExpression() instanceof VariableExpression || be.getRightExpression() instanceof ConstantExpression)) {
+            // catches the mocks without explicit invocation count; if not there, could return false positive when using closures to validate parameters; see ClosureParamsCheckOfMocksWithNoInvocationCountCheckAreIgnored.case.groovy
+            System.out.println("(looks like a closure-less mock, skipping)");
+            --nestingLevel;
+            return;
+        }
         if (expression.getText().contains("this.println")) {
             // skip
         } else if (blockStack.peek() == Type.ROOT_THEN

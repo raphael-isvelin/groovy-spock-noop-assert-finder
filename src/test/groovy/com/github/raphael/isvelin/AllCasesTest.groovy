@@ -46,9 +46,9 @@ class AllCasesTest extends Specification {
                 "FilterAndMapImplicitReturnIsAllowed.case.groovy",
                 "MockCaptureParamIsAsserting.case.groovy",
                 "AwaitilityAllowImplicitReturnBinaryExpression.case.groovy",
+                "ClosureParamsCheckOfMocksWithNoInvocationCountCheckAreIgnored.case.groovy",
             ]
     }
-
 
     def "false positive cases"() {
         when:
