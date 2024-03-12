@@ -31,7 +31,10 @@ import org.codehaus.groovy.ast.expr.BinaryExpression;
 import org.codehaus.groovy.ast.expr.CastExpression;
 import org.codehaus.groovy.ast.expr.ClosureExpression;
 import org.codehaus.groovy.ast.expr.ConstantExpression;
+import org.codehaus.groovy.ast.expr.ConstructorCallExpression;
 import org.codehaus.groovy.ast.expr.Expression;
+import org.codehaus.groovy.ast.expr.ListExpression;
+import org.codehaus.groovy.ast.expr.MapExpression;
 import org.codehaus.groovy.ast.expr.MethodCallExpression;
 import org.codehaus.groovy.ast.expr.NotExpression;
 import org.codehaus.groovy.ast.expr.PropertyExpression;
@@ -338,7 +341,7 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
         if (expression.getExpression() instanceof BinaryExpression be
                 && be.getOperation().getText().equals(">>")
                 && be.getLeftExpression() instanceof MethodCallExpression
-                && (be.getRightExpression() instanceof MethodCallExpression || be.getRightExpression() instanceof VariableExpression || be.getRightExpression() instanceof ConstantExpression)) {
+                && (be.getRightExpression() instanceof MethodCallExpression || be.getRightExpression() instanceof VariableExpression || be.getRightExpression() instanceof ConstantExpression || be.getRightExpression() instanceof ConstructorCallExpression || be.getRightExpression() instanceof ListExpression || be.getRightExpression() instanceof MapExpression)) {
             // catches the mocks without explicit invocation count; if not there, could return false positive when using closures to validate parameters; see ClosureParamsCheckOfMocksWithNoInvocationCountCheckAreIgnored.case.groovy
             System.out.println("(looks like a closure-less mock, skipping)");
             --nestingLevel;
