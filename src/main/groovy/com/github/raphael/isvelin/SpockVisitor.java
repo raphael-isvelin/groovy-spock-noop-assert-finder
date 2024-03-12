@@ -415,43 +415,59 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
 
     @Override
     public void visitIfElse(IfStatement statement) {
-        ++nestingLevel;
-        blockStack.push(Type.CONDITION_OR_LOOP);
+        if (blockStack.peek() != Type.ASSERTING_METHOD) { // hacky way to prevent matching, as assert not needed in loop/cond in this case
+            ++nestingLevel;
+            blockStack.push(Type.CONDITION_OR_LOOP);
+        }
         System.out.println("\033[30;2m(if/else: " + statement.getBooleanExpression().getText() + ")\033[0m");
         statement.getIfBlock().visit(this);
         statement.getElseBlock().visit(this);
-        blockStack.pop();
-        --nestingLevel;
+        if (blockStack.peek() != Type.ASSERTING_METHOD) {
+            blockStack.pop();
+            --nestingLevel;
+        }
     }
 
     @Override
     public void visitDoWhileLoop(DoWhileStatement statement) {
-        ++nestingLevel;
-        blockStack.push(Type.CONDITION_OR_LOOP);
+        if (blockStack.peek() != Type.ASSERTING_METHOD) { // hacky way to prevent matching, as assert not needed in loop/cond in this case
+            ++nestingLevel;
+            blockStack.push(Type.CONDITION_OR_LOOP);
+        }
         System.out.println("\033[30;2m(do/while: " + statement.getBooleanExpression().getText() + ")\033[0m");
         statement.getLoopBlock().visit(this);
-        blockStack.pop();
-        --nestingLevel;
+        if (blockStack.peek() != Type.ASSERTING_METHOD) {
+            blockStack.pop();
+            --nestingLevel;
+        }
     }
 
     @Override
     public void visitForLoop(ForStatement statement) {
-        ++nestingLevel;
-        blockStack.push(Type.CONDITION_OR_LOOP);
+        if (blockStack.peek() != Type.ASSERTING_METHOD) { // hacky way to prevent matching, as assert not needed in loop/cond in this case
+            ++nestingLevel;
+            blockStack.push(Type.CONDITION_OR_LOOP);
+        }
         System.out.println("\033[30;2m(for: " + statement.getCollectionExpression().getText() + ")\033[0m");
         statement.getLoopBlock().visit(this);
-        blockStack.pop();
-        --nestingLevel;
+        if (blockStack.peek() != Type.ASSERTING_METHOD) {
+            blockStack.pop();
+            --nestingLevel;
+        }
     }
 
     @Override
     public void visitWhileLoop(WhileStatement statement) {
-        ++nestingLevel;
-        blockStack.push(Type.CONDITION_OR_LOOP);
+        if (blockStack.peek() != Type.ASSERTING_METHOD) { // hacky way to prevent matching, as assert not needed in loop/cond in this case
+            ++nestingLevel;
+            blockStack.push(Type.CONDITION_OR_LOOP);
+        }
         System.out.println("\033[30;2m(while: " + statement.getBooleanExpression().getText() + ")\033[0m");
         statement.getLoopBlock().visit(this);
-        blockStack.pop();
-        --nestingLevel;
+        if (blockStack.peek() != Type.ASSERTING_METHOD) {
+            blockStack.pop();
+            --nestingLevel;
+        }
     }
 
     @Override

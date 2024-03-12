@@ -48,6 +48,7 @@ class AllCasesTest extends Specification {
                 "MockCaptureParamIsAsserting.case.groovy",
                 "AwaitilityAllowImplicitReturnBinaryExpression.case.groovy",
                 "ClosureParamsCheckOfMocksWithNoInvocationCountCheckAreIgnored.case.groovy",
+                "AssertNotNeededInAssertingBlockEvenInConditionOrLoop.case.groovy",
             ]
     }
 
