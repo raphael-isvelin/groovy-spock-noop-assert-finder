@@ -82,6 +82,7 @@ class SomeTestCase extends Specification {
             code = Arrays.stream(code.split("\n"))
                 .map(line -> " ".repeat(codeIndent) + line)
                 .collect(Collectors.joining("\n"));
+            code = code.replaceAll("\\$\\{[a-zA-Z0-9.:_-]+}", "<!VARIABLE!>");
             return baseCode.replaceAll(marker, code);
         }
     }

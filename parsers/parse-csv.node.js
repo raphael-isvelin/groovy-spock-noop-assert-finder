@@ -8,6 +8,7 @@ function parseCsv(csv) {
     let cwd, repo, repoUrl, mainBranch;
     const errors = [];
     const matches = {};
+    const excludedMatches = [];
     const files = {};
     const methods = {};
     const methodsExclMaybe = {};
@@ -39,6 +40,7 @@ function parseCsv(csv) {
                     part
                         .replace('<!COMMA!>', ',')
                         .replace('<!NEWLINE!>', '\n')
+                        .replace('<!DOLLAR!>', '$')
                 );
 
             if (flag === "!!!") {
@@ -87,6 +89,7 @@ function parseCsv(csv) {
                     scopeType: parts[4],
                     statementClass: parts[5],
                     text: parts[6],
+                    repo,
                 };
                 match['id'] = hashMatch(match);
                 if (!isMatchInExcludeList(repo, match)) {
@@ -98,6 +101,8 @@ function parseCsv(csv) {
                     if (match.severity !== "MAYBE" && match.severity !== "SMELL") {
                         ++methodsExclMaybeAndSmell[currentPathFromRepoRoot + ":" + parts[2]];
                     }
+                } else {
+                    excludedMatches.push(match);
                 }
             }
         });
@@ -144,6 +149,7 @@ function parseCsv(csv) {
         },
         files,
         sortedFiles,
+        excludedMatches,
         matchCountPerSeverity,
         methods,
         methodsWithAtLeastOneFailure,

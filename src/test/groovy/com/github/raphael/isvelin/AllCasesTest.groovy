@@ -23,6 +23,7 @@ class AllCasesTest extends Specification {
                 "NeedsAssertInRegularMethod.case.groovy",
                 "MethodsReturningBooleanAndStartingByAssertIsASmell.case.groovy",
                 "DontSkipAssertJMethodsIfNotImported.case.groovy",
+                "NonAssertedInEventuallyReturnsSpecificWarning.case.groovy",
             ]
     }
 
@@ -74,6 +75,7 @@ class AllCasesTest extends Specification {
         where:
             casePath << [
                 "CamelCaseNamedTestsArentDetectedWithImplicitThenBlock.case.groovy",
+                "NonAssertedPropertiesInEventuallyReturnsSpecificWarning.case.groovy",
             ]
     }
 

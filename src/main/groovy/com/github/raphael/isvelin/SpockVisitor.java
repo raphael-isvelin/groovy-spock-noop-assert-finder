@@ -4,6 +4,7 @@ import static com.github.raphael.isvelin.Constants.ASSERTING_METHODS;
 import static com.github.raphael.isvelin.Constants.ASSERTJ_METHODS;
 import static com.github.raphael.isvelin.Constants.AWAITILITY_METHOD_NAME;
 import static com.github.raphael.isvelin.Constants.CLEANUP_BLOCK_TAG;
+import static com.github.raphael.isvelin.Constants.POLLING_CONDITIONS_METHODS;
 import static com.github.raphael.isvelin.Constants.EXPECT_BLOCK_TAG;
 import static com.github.raphael.isvelin.Constants.GIVEN_BLOCK_TAG;
 import static com.github.raphael.isvelin.Constants.GROOVY_METHOD_WITH_NON_ASSERTING_CLOSURE_PARAMS;
@@ -46,6 +47,13 @@ import org.codehaus.groovy.ast.stmt.Statement;
 import org.codehaus.groovy.ast.stmt.WhileStatement;
 import org.codehaus.groovy.control.SourceUnit;
 
+/**
+ * WARNING: this is a quick and **dirty** parser made for a specific use-case, and not really built to be amended.
+ *   If you wish to make a quick modification to include or exclude a specific pattern,
+ *   I may suggest adding it to `visitExpressionStatement`,
+ *   this is the top-level expression, and has the most context to make a decision;
+ *   it will participate in adding to the pile of dirt, but will likely be the quickest way to include your small patch.
+ */
 public class SpockVisitor extends ClassCodeVisitorSupport {
 
     public final Path filePath;
@@ -79,7 +87,7 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
     @Override
     public void visitMethodCallExpression(MethodCallExpression call) {
         ++nestingLevel;
-        if (ASSERTING_METHODS.contains(call.getMethodAsString())) {
+        if (call.getMethodAsString() != null && ASSERTING_METHODS.contains(call.getMethodAsString())) {
             blockStack.push(Type.ASSERTING_METHOD);
             currentAssertingMethod = call.getMethodAsString();
             System.out.println(
@@ -98,7 +106,7 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
         System.out.println(
                 formatLogPrefix() + "METHOD CALL - " + call.getMethod() + " - " + call.getText() + " - " + call.getMethodAsString());
         lastCalledMethod = call.getMethodAsString();
-        if (METHODS_IMPLICIT_RETURN_ALLOWED.contains(call.getMethodAsString())) {
+        if (call.getMethodAsString() != null && METHODS_IMPLICIT_RETURN_ALLOWED.contains(call.getMethodAsString())) {
             System.out.println("(ignoring method: " + call.getMethodAsString() + ")");
         } else if (call.getArguments() instanceof ArgumentListExpression) {
             call.getObjectExpression().visit(this);
@@ -152,7 +160,7 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
                            && es.getExpression() instanceof BinaryExpression be) {
             if ((currentNonAssertingMethodWithClosureParam != null && GROOVY_METHOD_WITH_NON_ASSERTING_CLOSURE_PARAMS_RETURNING_BOOLEAN.contains(currentNonAssertingMethodWithClosureParam))
                         || lastCalledMethod.equals(AWAITILITY_METHOD_NAME)) {
-                System.out.println("(acceptble implicit return property - " + currentNonAssertingMethodWithClosureParam + " - " + lastCalledMethod + " - " + be.getText() + ")");
+                System.out.println("(acceptable implicit return property - " + currentNonAssertingMethodWithClosureParam + " - " + lastCalledMethod + " - " + be.getText() + ")");
                 writeMatch(this, Severity.MAYBE, be);
             } else {
                 System.out.println("~ looks like another BinaryExpression implicit return property ~");
@@ -173,7 +181,7 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
         MethodCallExpression mce = null;
         if (expression.getExpression() instanceof MethodCallExpression mcex) mce = mcex;
         else if (expression.getExpression() instanceof NotExpression ne && ne.getExpression() instanceof MethodCallExpression mcex) mce = mcex;
-        if (mce != null && GROOVY_METHOD_WITH_NON_ASSERTING_CLOSURE_PARAMS_RETURNING_BOOLEAN.contains(mce.getMethodAsString())) {
+        if (mce != null && mce.getMethodAsString() != null && GROOVY_METHOD_WITH_NON_ASSERTING_CLOSURE_PARAMS_RETURNING_BOOLEAN.contains(mce.getMethodAsString())) {
             if (blockStack.peek() == Type.ROOT_THEN || blockStack.peek() == Type.ASSERTING_METHOD) {
                 System.out.println("(Groovy method '" + mce.getMethodAsString() + "' called in then block or verify/with block, looks safe - not jumping in method)");
                 return true;
@@ -181,6 +189,18 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
                 writeMatch(this, Severity.WARN, mce.getLineNumber(), "boolean-returning Groovy method called outside of then block: " + expression.getText());
                 return true;
             }
+        }
+        return false;
+    }
+
+    private boolean ifEventuallyLogAndReturnTrue(Expression e) {
+        // TODO there's possibly other closures behaving like `eventually`, make this more generic and cleanup... everything
+        if (lastCalledMethod != null && POLLING_CONDITIONS_METHODS.contains(lastCalledMethod)) {
+            final var msg = "Warning! Avoiding assert keyword in the clojure is only possible if the conditions object type is "
+                + "known during compilation (no 'def' on the left side), and only from Spock 2.0. "
+                + "Consider always using assert for safety.";
+            writeMatch(this, Severity.SMELL, e.getLineNumber(), msg);
+            return true;
         }
         return false;
     }
@@ -240,10 +260,14 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
                                 || lastCalledMethod.equals(AWAITILITY_METHOD_NAME)) {
                             writeMatch(this, Severity.MAYBE, be);
                         } else {
-                            writeMatch(this, Severity.WARN, be);
+                            if (!ifEventuallyLogAndReturnTrue(be)) {
+                                writeMatch(this, Severity.WARN, be);
+                            }
                         }
                     } else {
-                        writeMatch(this, Severity.ERROR, be);
+                        if (!ifEventuallyLogAndReturnTrue(be)) {
+                            writeMatch(this, Severity.ERROR, be);
+                        }
                     }
                 }
             } else {
@@ -370,7 +394,9 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
                     || mc.getMethodAsString().startsWith("isEmpty")
                     || mc.getMethodAsString().startsWith("isPresent"))) {
             if (blockStack.peek().requiresAssert) {
-                writeMatch(this, Severity.WARN, mc);
+                if (!ifEventuallyLogAndReturnTrue(mc)) {
+                    writeMatch(this, Severity.WARN, mc);
+                }
             } else {
                 System.out.println("(safe, in " + blockStack.peek().value.trim() + " block - " + expression.getText() + ")");
             }

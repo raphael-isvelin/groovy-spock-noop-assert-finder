@@ -55,7 +55,8 @@ public class ATL {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            writeSystemInfo(SystemInfoType.ERROR, e.getMessage().replaceAll("\n", "<!NEWLINE!>").replaceAll("\r", "<!NEWLINE!>"));
+            final var message = e.getMessage() != null ? e.getMessage().replaceAll("\n", "<!NEWLINE!>").replaceAll("\r", "<!NEWLINE!>") : "NULL";
+            writeSystemInfo(SystemInfoType.ERROR, message);
         }
     }
 }
