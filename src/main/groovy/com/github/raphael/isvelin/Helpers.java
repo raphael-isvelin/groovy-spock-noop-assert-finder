@@ -127,24 +127,28 @@ public class Helpers {
 
     public static String addMetaDataToSourceCode(String sourceCode) {
         return sourceCode
-            .replaceAll("\\$", "<!DOLLAR!>")
-            .replaceAll("\n([^\n\"]*)given:", "\nprintln \"" + GIVEN_BLOCK_TAG + "\"; given:")
-            .replaceAll("\n([^\n\"]*)setup:", "\nprintln \"" + GIVEN_BLOCK_TAG + "\"; setup:")
-            .replaceAll("\n([^\n\"]*)cleanup:", "\nprintln \"" + GIVEN_BLOCK_TAG + "\"; cleanup:")
-            .replaceAll("\n([^\n\"]*)when:", "\nprintln \"" + WHEN_BLOCK_TAG + "\"; when:")
-            .replaceAll("\n([^\n\"]*)then:", "\nprintln \"" + THEN_BLOCK_TAG + "\"; then:")
-            .replaceAll("\n([^\n\"]*)expect:", "\nprintln \"" + EXPECT_BLOCK_TAG + "\"; expect:")
-            .replaceAll("\n([^\n\"]*)where:", "\nprintln \"" + WHERE_BLOCK_TAG + "\"; where:")
-            .replaceAll("\n([^\n\"]*)def[ \t]+\"setup\"", "\n$1def setup")
-            .replaceAll("\n([^\n\"]*)def[ \t]+'setup'", "\n$1def setup")
-            .replaceAll("\n([^\n\"]*)def[ \t]+\"cleanup\"", "\n$1def cleanup")
-            .replaceAll("\n([^\n\"]*)def[ \t]+'cleanup'", "\n$1def cleanup")
-            .replaceAll("\n([^\n\"]*)void[ \t]+['\"]?setup['\"]?", "\n$1void setup")
-            .replaceAll("\n([^\n\"]*)void[ \t]+['\"]?cleanup['\"]?", "\n$1void cleanup")
-            .replaceAll("\n([^\n\"]*)def[ \t]+\"", "\n$1def \"" + TEST_CASE_BLOCK_TAG)
-            .replaceAll("\n([^\n\"]*)def[ \t]+'", "\n$1def '" + TEST_CASE_BLOCK_TAG)
-            .replaceAll("\n([^\n\"]*)void[ \t]+\"", "\n$1void \"" + TEST_CASE_BLOCK_TAG)
-            .replaceAll("\n([^\n\"]*)void[ \t]+'", "\n$1void '" + TEST_CASE_BLOCK_TAG)
+            // will fail if the code has a field (e.g. map args) with a field named similarly (e.g. `someMethod(cleanup: true)`)
+            .replaceAll("\n([^\n\"/]*)given:", "\nprintln \"" + GIVEN_BLOCK_TAG + "\"; given:")
+            .replaceAll("\n([^\n\"/]*)setup:", "\nprintln \"" + GIVEN_BLOCK_TAG + "\"; setup:")
+            .replaceAll("\n([^\n\"/]*)cleanup:", "\nprintln \"" + GIVEN_BLOCK_TAG + "\"; cleanup:")
+            .replaceAll("\n([^\n\"/]*)when:", "\nprintln \"" + WHEN_BLOCK_TAG + "\"; when:")
+            .replaceAll("\n([^\n\"/]*)then:", "\nprintln \"" + THEN_BLOCK_TAG + "\"; then:")
+            .replaceAll("\n([^\n\"/]*)expect:", "\nprintln \"" + EXPECT_BLOCK_TAG + "\"; expect:")
+            .replaceAll("\n([^\n\"/]*)where:", "\nprintln \"" + WHERE_BLOCK_TAG + "\"; where:")
+
+            .replaceAll("\n([^\n\"/]*)def[ \t]+\"setup\"", "\n$1def setup")
+            .replaceAll("\n([^\n\"/]*)def[ \t]+'setup'", "\n$1def setup")
+            .replaceAll("\n([^\n\"/]*)def[ \t]+\"cleanup\"", "\n$1def cleanup")
+            .replaceAll("\n([^\n\"/]*)def[ \t]+'cleanup'", "\n$1def cleanup")
+            .replaceAll("\n([^\n\"/]*)void[ \t]+\"setup\"", "\n$1void setup")
+            .replaceAll("\n([^\n\"/]*)void[ \t]+'setup'", "\n$1void setup")
+            .replaceAll("\n([^\n\"/]*)void[ \t]+\"cleanup\"", "\n$1void cleanup")
+            .replaceAll("\n([^\n\"/]*)void[ \t]+'cleanup'", "\n$1void cleanup")
+
+            .replaceAll("\n([^\n\"/]*)def[ \t]+([\"]{1,4})", "\n$1def $2" + TEST_CASE_BLOCK_TAG)
+            .replaceAll("\n([^\n\"/]*)def[ \t]+'", "\n$1def '" + TEST_CASE_BLOCK_TAG)
+            .replaceAll("\n([^\n\"/]*)void[ \t]+\"", "\n$1void \"" + TEST_CASE_BLOCK_TAG)
+            .replaceAll("\n([^\n\"/]*)void[ \t]+'", "\n$1void '" + TEST_CASE_BLOCK_TAG)
         ;
     }
 

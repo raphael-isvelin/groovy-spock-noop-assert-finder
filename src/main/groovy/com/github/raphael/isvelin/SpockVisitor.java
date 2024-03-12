@@ -124,7 +124,7 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
         for (var e : expression.getExpressions()) {
             if (e instanceof ClosureExpression
                         || (e instanceof CastExpression ce && ce.getExpression() instanceof ClosureExpression)) {
-                if (GROOVY_METHOD_WITH_NON_ASSERTING_CLOSURE_PARAMS.contains(methodName)) {
+                if (methodName != null && GROOVY_METHOD_WITH_NON_ASSERTING_CLOSURE_PARAMS.contains(methodName)) {
                     System.out.println("(visiting closure param of non-asserting method: " + methodName + ")");
                     currentNonAssertingMethodWithClosureParam = methodName;
                     e.visit(this);
@@ -473,7 +473,7 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
         if (node.getName().startsWith("assert") && node.getReturnType().getName().equals("boolean")) {
             writeMatch(this, Severity.SMELL, node.getLineNumber(), "method '" + node.getName() + "' starts by assert* but returns a boolean, this is laying the ground for future mistakes");
         }
-        currentMethod = node.getName().replaceAll(TEST_CASE_BLOCK_TAG, "");
+        currentMethod = node.getName().replaceAll(TEST_CASE_BLOCK_TAG, "").replaceAll("\n", "<!NEWLINE!>");
         if (!visitedMethods.contains(currentMethod)) {
             visitedMethods.add(currentMethod);
             writeSystemInfo(SystemInfoType.VISIT_METHOD, cleanMethodName(this));

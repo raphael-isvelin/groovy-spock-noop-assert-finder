@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const EXCLUDE_NON_TEST_FILES = true;
+
 const excludeListMatchIds = process.env.EXCLUDE_LIST_MATCH_IDS === undefined ? [] : process.env.EXCLUDE_LIST_MATCH_IDS.split('\n');
 const excludeListFilePaths = process.env.EXCLUDE_LIST_FILE_PATHS === undefined ? [] : process.env.EXCLUDE_LIST_FILE_PATHS.split('\n');
 
@@ -17,6 +19,7 @@ function parseCsv(csv) {
     let currentFileName = "";
     let currentFilePath = "";
     let currentPathFromRepoRoot = "";
+    let currentPathIsATest = false;
 
     csv
         .split('\n')
@@ -56,53 +59,62 @@ function parseCsv(csv) {
                     currentFileName = parts[1];
                     currentFilePath = parts[2];
                     currentPathFromRepoRoot = currentFilePath.replaceAll(cwd + "/", "");
-                    if (matches[currentPathFromRepoRoot] === undefined) {
-                        matches[currentPathFromRepoRoot] = [];
-                    }
-                    if (files[currentPathFromRepoRoot] === undefined) {
-                        repoUrl = "https://github.com/transferwise/" + repo;
-                        files[currentPathFromRepoRoot] = {
-                            fileName: currentFileName,
-                            pathFromRepoRoot: currentPathFromRepoRoot,
-                            githubUrl: repoUrl + "/blob/" + mainBranch + "/" + currentPathFromRepoRoot,
-                            matches: matches[currentPathFromRepoRoot],
-                        };
+                    currentPathIsATest =  isATest(currentPathFromRepoRoot);
+                    if (!currentPathIsATest && EXCLUDE_NON_TEST_FILES) {
+                        console.log('[' + repo + '] File at ' + currentPathFromRepoRoot + ' is likely not a test; adding to exclude list');
+                    } else {
+                        if (matches[currentPathFromRepoRoot] === undefined) {
+                            matches[currentPathFromRepoRoot] = [];
+                        }
+                        if (files[currentPathFromRepoRoot] === undefined) {
+                            repoUrl = "https://github.com/transferwise/" + repo;
+                            files[currentPathFromRepoRoot] = {
+                                fileName: currentFileName,
+                                pathFromRepoRoot: currentPathFromRepoRoot,
+                                githubUrl: repoUrl + "/blob/" + mainBranch + "/" + currentPathFromRepoRoot,
+                                matches: matches[currentPathFromRepoRoot],
+                            };
+                        }
                     }
                 } else if (parts[0] === "VISIT_METHOD") {
-                    if (methods[currentPathFromRepoRoot + ":" + parts[1]] === undefined) {
-                        methods[currentPathFromRepoRoot + ":" + parts[1]] = 0;
-                    }
-                    if (methodsExclMaybe[currentPathFromRepoRoot + ":" + parts[1]] === undefined) {
-                        methodsExclMaybe[currentPathFromRepoRoot + ":" + parts[1]] = 0;
-                    }
-                    if (methodsExclMaybeAndSmell[currentPathFromRepoRoot + ":" + parts[1]] === undefined) {
-                        methodsExclMaybeAndSmell[currentPathFromRepoRoot + ":" + parts[1]] = 0;
+                    if (currentPathIsATest || (!currentPathIsATest && !EXCLUDE_NON_TEST_FILES)) {
+                        if (methods[currentPathFromRepoRoot + ":" + parts[1]] === undefined) {
+                            methods[currentPathFromRepoRoot + ":" + parts[1]] = 0;
+                        }
+                        if (methodsExclMaybe[currentPathFromRepoRoot + ":" + parts[1]] === undefined) {
+                            methodsExclMaybe[currentPathFromRepoRoot + ":" + parts[1]] = 0;
+                        }
+                        if (methodsExclMaybeAndSmell[currentPathFromRepoRoot + ":" + parts[1]] === undefined) {
+                            methodsExclMaybeAndSmell[currentPathFromRepoRoot + ":" + parts[1]] = 0;
+                        }
                     }
                 }
             } else if (flag === ">>>") {
-                const match = {
-                    severity: parts[0],
-                    fileName: parts[1],
-                    pathFromRepoRoot: currentPathFromRepoRoot,
-                    methodName: parts[2],
-                    lineNumber: parts[3],
-                    scopeType: parts[4],
-                    statementClass: parts[5],
-                    text: parts[6],
-                    repo,
-                };
-                match['id'] = hashMatch(match);
-                if (!isMatchInExcludeList(repo, match)) {
-                    ++methods[currentPathFromRepoRoot + ":" + parts[2]];
-                    matches[currentPathFromRepoRoot].push(match);
-                    if (match.severity !== "MAYBE") {
-                        ++methodsExclMaybe[currentPathFromRepoRoot + ":" + parts[2]];
+                if (currentPathIsATest || (!currentPathIsATest && !EXCLUDE_NON_TEST_FILES)) {
+                    const match = {
+                        severity: parts[0],
+                        fileName: parts[1],
+                        pathFromRepoRoot: currentPathFromRepoRoot,
+                        methodName: parts[2],
+                        lineNumber: parts[3],
+                        scopeType: parts[4],
+                        statementClass: parts[5],
+                        text: parts[6],
+                        repo,
+                    };
+                    match['id'] = hashMatch(match);
+                    if (!isMatchInExcludeList(repo, match)) {
+                        ++methods[currentPathFromRepoRoot + ":" + parts[2]];
+                        matches[currentPathFromRepoRoot].push(match);
+                        if (match.severity !== "MAYBE") {
+                            ++methodsExclMaybe[currentPathFromRepoRoot + ":" + parts[2]];
+                        }
+                        if (match.severity !== "MAYBE" && match.severity !== "SMELL") {
+                            ++methodsExclMaybeAndSmell[currentPathFromRepoRoot + ":" + parts[2]];
+                        }
+                    } else {
+                        excludedMatches.push(match);
                     }
-                    if (match.severity !== "MAYBE" && match.severity !== "SMELL") {
-                        ++methodsExclMaybeAndSmell[currentPathFromRepoRoot + ":" + parts[2]];
-                    }
-                } else {
-                    excludedMatches.push(match);
                 }
             }
         });
@@ -156,6 +168,11 @@ function parseCsv(csv) {
         methodsWithAtLeastOneFailureExclMaybe,
         methodsWithAtLeastOneFailureExclMaybeAndSmell,
     }
+}
+
+function isATest(pathFromRepoRoot) {
+    const substrings = ['test/', 'Test/', 'tests/', 'Tests/', '/test', '/Test', '/tests', '/Tests', 'Test.groovy', 'Spec.groovy', 'TestFactory.groovy'];
+    return substrings.some(substring => pathFromRepoRoot.includes(substring));
 }
 
 function isMatchInExcludeList(repoName, match) {
