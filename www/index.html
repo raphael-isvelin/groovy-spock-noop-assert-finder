@@ -94,9 +94,11 @@
         Number of repos: <span class="info-field" id="info-aggr-repo-count">loading</span><br/>
         Number of Groovy files: <span class="info-field" id="info-aggr-file-count">loading</span><br/>
         Number of methods parsed: <span class="info-field" id="info-aggr-method-count">loading</span><br/>
-        &nbsp;&nbsp;&nbsp;&nbsp;with at least one error: <span class="info-field" id="info-aggr-method-with-error-count">loading</span><br/>
-        &nbsp;&nbsp;&nbsp;&nbsp;with at least one error (excluding <span class="MAYBE">MAYBE</span> <img src="question-mark-icon.jpg" width=14 title="(Very) high chance of false positive, but might still be worth it to have a quick glance"/>): <span class="info-field" id="info-aggr-method-with-error-excl-maybe-count">loading</span><br/>
-        &nbsp;&nbsp;&nbsp;&nbsp;with at least one error (excluding <span class="MAYBE">MAYBE</span> and <span class="SMELL">SMELL</span> <img src="question-mark-icon.jpg" width=14 title="Different type of errors, excluding them for stats purpose"/>): <span class="info-field" id="info-aggr-method-with-error-excl-maybe-and-smell-count">loading</span><br/><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;with at least one match: <span class="info-field" id="info-aggr-method-with-error-count">loading</span><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;with at least one match (<b>only</b> <span class="ERROR">ERROR</span>): <span class="info-field" id="info-aggr-method-with-error-only-error-count">loading</span><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;with at least one match (<b>only</b> <span class="ERROR">ERROR</span> and <span class="SMELL">SMELL</span>): <span class="info-field" id="info-aggr-method-with-error-only-error-and-smell-count">loading</span><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;with at least one match (<b>excluding</b> <span class="MAYBE">MAYBE</span> <img src="question-mark-icon.jpg" width=14 title="(Very) high chance of false positive, but might still be worth it to have a quick glance"/>): <span class="info-field" id="info-aggr-method-with-error-excl-maybe-count">loading</span><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;with at least one match (<b>excluding</b> <span class="MAYBE">MAYBE</span> and <span class="SMELL">SMELL</span> <img src="question-mark-icon.jpg" width=14 title="Different type of errors, excluding them for stats purpose"/>): <span class="info-field" id="info-aggr-method-with-error-excl-maybe-and-smell-count">loading</span><br/><br/>
       </div>
       <hr/>
       Matches found: <span class="info-field" id="info-aggr-match-total-count">loading</span>
@@ -107,10 +109,10 @@
         <li><span class="MAYBE">MAYBE</span>: <span class="info-field" id="info-aggr-match-maybe-count">loading</span></li>
       </ul>
       <hr/>
-      <input checked type="checkbox" id="show-error" name="show-error" /><label for="show-error">show <span class="ERROR">ERROR</span> in report</label><br/>
-      <input checked type="checkbox" id="show-smell" name="show-smell" /><label for="show-smell">show <span class="SMELL">SMELL</span> in report</label><br/>
-      <input checked type="checkbox" id="show-warn" name="show-warn" /><label for="show-warn">show <span class="WARN">WARN</span> in report</label><br/>
-      <input type="checkbox" id="show-maybe" name="show-maybe" /><label for="show-maybe">show <span class="MAYBE">MAYBE</span> in report</label><br/>
+      <input checked type="checkbox" id="show-error" name="show-error" /><label for="show-error">show <span class="ERROR">ERROR</span> in report — roughly <b>8% false positives</b></label><br/>
+      <input checked type="checkbox" id="show-smell" name="show-smell" /><label for="show-smell">show <span class="SMELL">SMELL</span> in report — may or may not currently be an error, but <b>enables future ones</b></label><br/>
+      <input checked type="checkbox" id="show-warn" name="show-warn" /><label for="show-warn">show <span class="WARN">WARN</span> in report — roughly <b>62% false positives</b></label><br/>
+      <input type="checkbox" id="show-maybe" name="show-maybe" /><label for="show-maybe">show <span class="MAYBE">MAYBE</span> in report — very high number of false positives</label><br/>
       <input type="checkbox" id="show-file-with-no-match" name="show-file-with-no-match" /><label for="show-file-with-no-match">show files with no match in report</label><br/>
       <hr/>
       <div id="dev-stuff" style="display: none;">
@@ -144,9 +146,11 @@
       <div id="info">
         Number of Groovy files: <span class="info-field" id="info-file-count">loading</span><br/>
         Number of methods parsed: <span class="info-field" id="info-method-count">loading</span><br/>
-        &nbsp;&nbsp;&nbsp;&nbsp;with at least one error: <span class="info-field" id="info-method-with-error-count">loading</span><br/>
-        &nbsp;&nbsp;&nbsp;&nbsp;with at least one error (excluding <span class="MAYBE">MAYBE</span> <img src="question-mark-icon.jpg" width=14 title="(Very) high chance of false positive, but can still be worth it to have a quick glance"/>): <span class="info-field" id="info-method-with-error-excl-maybe-count">loading</span><br/><br/>
-        &nbsp;&nbsp;&nbsp;&nbsp;with at least one error (excluding <span class="MAYBE">MAYBE</span> and <span class="SMELL">SMELL</span> <img src="question-mark-icon.jpg" width=14 title="Different type of errors, excluding them for stats purpose"/>): <span class="info-field" id="info-method-with-error-excl-maybe-and-smell-count">loading</span><br/><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;with at least one match: <span class="info-field" id="info-method-with-error-count">loading</span><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;with at least one match (<b>only</b> <span class="ERROR">ERROR</span>): <span class="info-field" id="info-method-with-error-only-error-count">loading</span><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;with at least one match (<b>only</b> <span class="ERROR">ERROR</span> and <span class="SMELL">SMELL</span>): <span class="info-field" id="info-method-with-error-only-error-and-smell-count">loading</span><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;with at least one match (<b>excluding</b> <span class="MAYBE">MAYBE</span> <img src="question-mark-icon.jpg" width=14 title="(Very) high chance of false positive, but can still be worth it to have a quick glance"/>): <span class="info-field" id="info-method-with-error-excl-maybe-count">loading</span><br/><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;with at least one match (<b>excluding</b> <span class="MAYBE">MAYBE</span> and <span class="SMELL">SMELL</span> <img src="question-mark-icon.jpg" width=14 title="Different type of errors, excluding them for stats purpose"/>): <span class="info-field" id="info-method-with-error-excl-maybe-and-smell-count">loading</span><br/><br/>
       
         Matches found: <span class="info-field" id="info-match-total-count">loading</span>
         <ul style="margin-top: -0px;">
@@ -216,11 +220,21 @@
           <th>
             <img src="sort-up-${sortBy.columnNumber === 9 && !sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(9, false)" width=14 />
             <img src="sort-down-${sortBy.columnNumber === 9 && sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(9, true)" width=14 /><br/>
-            Method >0 (e. <span class="MAYBE">M.</span>)
+            Method >0 (o. <span class="ERROR">E.</span>)
           </th>
           <th>
             <img src="sort-up-${sortBy.columnNumber === 10 && !sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(10, false)" width=14 />
             <img src="sort-down-${sortBy.columnNumber === 10 && sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(10, true)" width=14 /><br/>
+            Method >0 (o. <span class="ERROR">E.</span> & <span class="SMELL">S.</span>)
+          </th>
+          <th>
+            <img src="sort-up-${sortBy.columnNumber === 11 && !sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(11, false)" width=14 />
+            <img src="sort-down-${sortBy.columnNumber === 11 && sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(11, true)" width=14 /><br/>
+            Method >0 (e. <span class="MAYBE">M.</span>)
+          </th>
+          <th>
+            <img src="sort-up-${sortBy.columnNumber === 12 && !sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(12, false)" width=14 />
+            <img src="sort-down-${sortBy.columnNumber === 12 && sortBy.reverse ? "active-": ""}icon.png" onclick="setSortBy(12, true)" width=14 /><br/>
             Method >0 (e. <span class="MAYBE">M.</span> & <span class="SMELL">S.</span>)
           </th>
         </tr>
@@ -261,11 +275,21 @@
         <th style="width: 126px">
           <img src="sort-up-${sortByGroupByTeam.columnNumber === 6 && !sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(6, false)" width=14 />
           <img src="sort-down-${sortByGroupByTeam.columnNumber === 6 && sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(6, true)" width=14 /><br/>
-          Method >0 (e. <span class="MAYBE">M.</span>)
+          Method >0 (o. <span class="ERROR">E.</span>)
         </th>
         <th style="width: 160px">
           <img src="sort-up-${sortByGroupByTeam.columnNumber === 7 && !sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(7, false)" width=14 />
           <img src="sort-down-${sortByGroupByTeam.columnNumber === 7 && sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(7, true)" width=14 /><br/>
+          Method >0 (o. <span class="ERROR">E.</span> & <span class="SMELL">S.</span>)
+        </th>
+        <th style="width: 126px">
+          <img src="sort-up-${sortByGroupByTeam.columnNumber === 8 && !sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(8, false)" width=14 />
+          <img src="sort-down-${sortByGroupByTeam.columnNumber === 8 && sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(8, true)" width=14 /><br/>
+          Method >0 (e. <span class="MAYBE">M.</span>)
+        </th>
+        <th style="width: 160px">
+          <img src="sort-up-${sortByGroupByTeam.columnNumber === 9 && !sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(9, false)" width=14 />
+          <img src="sort-down-${sortByGroupByTeam.columnNumber === 9 && sortByGroupByTeam.reverse ? "active-": ""}icon.png" onclick="setSortByGroupByTeam(9, true)" width=14 /><br/>
           Method >0 (e. <span class="MAYBE">M.</span> & <span class="SMELL">S.</span>)
         </th>
       </tr>
@@ -316,7 +340,6 @@
           else delete falsePositives[hash];
           console.log('false positives:\n' + Object.keys(falsePositives).join('\n'));
         }
-        countCheckboxes[checkType + "_" + severity] += (checkboxElem.currentTarget.checked ? 1 : -1);
         if (ackFpInUniqueMethods[methodName] === undefined) {
           ackFpInUniqueMethods[methodName] = 0;
         } 
@@ -381,6 +404,8 @@
         let fileCount = 0;
         let methodCount = 0;
         let methodWithErrorCount = 0;
+        let methodWithErrorOnlyErrorCount = 0;
+        let methodWithErrorOnlyErrorAndSmellCount = 0;
         let methodWithErrorExclMaybeCount = 0;
         let methodWithErrorExclMaybeAndSmellCount = 0;
         let matchTotalCount = 0;
@@ -401,6 +426,8 @@
           tableRow.push(report.matchCountPerSeverity.SMELL);
           tableRow.push(report.matchCountPerSeverity.WARN);
           tableRow.push(report.matchCountPerSeverity.MAYBE);
+          tableRow.push(report.methodsWithAtLeastOneFailureOnlyError);
+          tableRow.push(report.methodsWithAtLeastOneFailureOnlyErrorAndSmell);
           tableRow.push(report.methodsWithAtLeastOneFailureExclMaybe);
           tableRow.push(report.methodsWithAtLeastOneFailureExclMaybeAndSmell);
           tableRows.push(tableRow);
@@ -408,6 +435,8 @@
           fileCount += Object.keys(report.files).length;
           methodCount += Object.keys(report.methods).length;
           methodWithErrorCount += report.methodsWithAtLeastOneFailure;
+          methodWithErrorOnlyErrorCount += report.methodsWithAtLeastOneFailureOnlyError;
+          methodWithErrorOnlyErrorAndSmellCount += report.methodsWithAtLeastOneFailureOnlyErrorAndSmell;
           methodWithErrorExclMaybeCount += report.methodsWithAtLeastOneFailureExclMaybe;
           methodWithErrorExclMaybeAndSmellCount += report.methodsWithAtLeastOneFailureExclMaybeAndSmell;
           matchTotalCount += report.matchCountPerSeverity['total'];
@@ -424,6 +453,8 @@
                 matchSmell: 0,
                 matchWarn: 0,
                 matchMaybe: 0,
+                methodsWithAtLeastOneFailureOnlyError: 0,
+                methodsWithAtLeastOneFailureOnlyErrorAndSmell: 0,
                 methodsWithAtLeastOneFailureExclMaybe: 0,
                 methodsWithAtLeastOneFailureExclMaybeAndSmell: 0,
               }
@@ -433,12 +464,14 @@
             teamHist[team].matchSmell += report.matchCountPerSeverity['SMELL'];
             teamHist[team].matchWarn += report.matchCountPerSeverity['WARN'];
             teamHist[team].matchMaybe += report.matchCountPerSeverity['MAYBE'];
+            teamHist[team].methodsWithAtLeastOneFailureOnlyError += report.methodsWithAtLeastOneFailureOnlyError;
+            teamHist[team].methodsWithAtLeastOneFailureOnlyErrorAndSmell += report.methodsWithAtLeastOneFailureOnlyErrorAndSmell;
             teamHist[team].methodsWithAtLeastOneFailureExclMaybe += report.methodsWithAtLeastOneFailureExclMaybe;
             teamHist[team].methodsWithAtLeastOneFailureExclMaybeAndSmell += report.methodsWithAtLeastOneFailureExclMaybeAndSmell;
           });
         });
         sortByNthColumn(tableRows, sortBy);
-        let tableHtml = '<table style="width: 1282px">' + aggregateTableHeader();
+        let tableHtml = '<table style="width: 1370px">' + aggregateTableHeader();
         let i = 1;
         tableRows.forEach(row => {
           tableHtml += createAggregateTableRow(row, i++);
@@ -450,6 +483,8 @@
         document.getElementById('info-aggr-file-count').innerText = fileCount;
         document.getElementById('info-aggr-method-count').innerText = methodCount;
         document.getElementById('info-aggr-method-with-error-count').innerText = methodWithErrorCount + ' (' + (methodWithErrorCount/methodCount*100).toFixed(2) + '%)';
+        document.getElementById('info-aggr-method-with-error-only-error-count').innerText = methodWithErrorOnlyErrorCount + ' (' + (methodWithErrorOnlyErrorCount/methodCount*100).toFixed(2) + '%)';
+        document.getElementById('info-aggr-method-with-error-only-error-and-smell-count').innerText = methodWithErrorOnlyErrorAndSmellCount + ' (' + (methodWithErrorOnlyErrorAndSmellCount/methodCount*100).toFixed(2) + '%)';
         document.getElementById('info-aggr-method-with-error-excl-maybe-count').innerText = methodWithErrorExclMaybeCount + ' (' + (methodWithErrorExclMaybeCount/methodCount*100).toFixed(2) + '%)';
         document.getElementById('info-aggr-method-with-error-excl-maybe-and-smell-count').innerText = methodWithErrorExclMaybeAndSmellCount + ' (' + (methodWithErrorExclMaybeAndSmellCount/methodCount*100).toFixed(2) + '%)';
         document.getElementById('info-aggr-match-total-count').innerText = matchTotalCount;
@@ -468,6 +503,8 @@
           row.push(team.matchSmell);
           row.push(team.matchWarn);
           row.push(team.matchMaybe);
+          row.push(team.methodsWithAtLeastOneFailureOnlyError);
+          row.push(team.methodsWithAtLeastOneFailureOnlyErrorAndSmell);
           row.push(team.methodsWithAtLeastOneFailureExclMaybe);
           row.push(team.methodsWithAtLeastOneFailureExclMaybeAndSmell);
           groupByTableRows.push(row);
@@ -487,6 +524,8 @@
             <td>${tableRow[5]}</td>
             <td>${tableRow[6]}</td>
             <td>${tableRow[7]}</td>
+            <td>${tableRow[8]}</td>
+            <td>${tableRow[9]}</td>
           </tr>
           `;
         });
@@ -508,6 +547,8 @@
             <td>${row[8]}</td>
             <td>${row[9]}</td>
             <td>${row[10]}</td>
+            <td>${row[11]}</td>
+            <td>${row[12]}</td>
           </tr>
         `;
       }
@@ -555,6 +596,8 @@
         document.getElementById('info-file-count').innerText = Object.keys(report.files).length;
         document.getElementById('info-method-count').innerText = Object.keys(report.methods).length;
         document.getElementById('info-method-with-error-count').innerText = report.methodsWithAtLeastOneFailure;
+        document.getElementById('info-method-with-error-only-error-count').innerText = report.methodsWithAtLeastOneFailureOnlyError;
+        document.getElementById('info-method-with-error-only-error-and-smell-count').innerText = report.methodsWithAtLeastOneFailureOnlyErrorAndSmell;
         document.getElementById('info-method-with-error-excl-maybe-count').innerText = report.methodsWithAtLeastOneFailureExclMaybe;
         document.getElementById('info-method-with-error-excl-maybe-and-smell-count').innerText = report.methodsWithAtLeastOneFailureExclMaybeAndSmell;
 

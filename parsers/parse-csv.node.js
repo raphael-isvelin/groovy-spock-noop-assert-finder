@@ -13,6 +13,8 @@ function parseCsv(csv) {
     const excludedMatches = [];
     const files = {};
     const methods = {};
+    const methodsOnlyError = {};
+    const methodsOnlyErrorAndSmell = {};
     const methodsExclMaybe = {};
     const methodsExclMaybeAndSmell = {};
 
@@ -81,6 +83,12 @@ function parseCsv(csv) {
                         if (methods[currentPathFromRepoRoot + ":" + parts[1]] === undefined) {
                             methods[currentPathFromRepoRoot + ":" + parts[1]] = 0;
                         }
+                        if (methodsOnlyError[currentPathFromRepoRoot + ":" + parts[1]] === undefined) {
+                            methodsOnlyError[currentPathFromRepoRoot + ":" + parts[1]] = 0;
+                        }
+                        if (methodsOnlyErrorAndSmell[currentPathFromRepoRoot + ":" + parts[1]] === undefined) {
+                            methodsOnlyErrorAndSmell[currentPathFromRepoRoot + ":" + parts[1]] = 0;
+                        }
                         if (methodsExclMaybe[currentPathFromRepoRoot + ":" + parts[1]] === undefined) {
                             methodsExclMaybe[currentPathFromRepoRoot + ":" + parts[1]] = 0;
                         }
@@ -106,6 +114,12 @@ function parseCsv(csv) {
                     if (!isMatchInExcludeList(repo, match)) {
                         ++methods[currentPathFromRepoRoot + ":" + parts[2]];
                         matches[currentPathFromRepoRoot].push(match);
+                        if (match.severity === "ERROR") {
+                            ++methodsOnlyError[currentPathFromRepoRoot + ":" + parts[2]];
+                        }
+                        if (match.severity === "ERROR" || match.severity === 'SMELL') {
+                            ++methodsOnlyErrorAndSmell[currentPathFromRepoRoot + ":" + parts[2]];
+                        }
                         if (match.severity !== "MAYBE") {
                             ++methodsExclMaybe[currentPathFromRepoRoot + ":" + parts[2]];
                         }
@@ -132,14 +146,14 @@ function parseCsv(csv) {
 
     const methodsWithAtLeastOneFailure = Object.values(methods)
         .filter(value => value > 0).length;
+    const methodsWithAtLeastOneFailureOnlyError = Object.values(methodsOnlyError)
+        .filter(value => value > 0).length;
+    const methodsWithAtLeastOneFailureOnlyErrorAndSmell = Object.values(methodsOnlyErrorAndSmell)
+        .filter(value => value > 0).length;
     const methodsWithAtLeastOneFailureExclMaybe = Object.values(methodsExclMaybe)
         .filter(value => value > 0).length;
     const methodsWithAtLeastOneFailureExclMaybeAndSmell = Object.values(methodsExclMaybeAndSmell)
         .filter(value => value > 0).length;
-
-    const matchCount = sortedFiles
-        .map(match => match.matches.length)
-        .reduce((sum, current) => sum + current, 0);
 
     const matchCountPerSeverity = {
         'SMELL': 0,
@@ -165,6 +179,8 @@ function parseCsv(csv) {
         matchCountPerSeverity,
         methods,
         methodsWithAtLeastOneFailure,
+        methodsWithAtLeastOneFailureOnlyError,
+        methodsWithAtLeastOneFailureOnlyErrorAndSmell,
         methodsWithAtLeastOneFailureExclMaybe,
         methodsWithAtLeastOneFailureExclMaybeAndSmell,
     }

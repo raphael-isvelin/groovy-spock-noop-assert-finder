@@ -2,7 +2,7 @@ package com.github.raphael.isvelin;
 
 import static com.github.raphael.isvelin.Constants.ASSERTING_METHODS;
 import static com.github.raphael.isvelin.Constants.ASSERTJ_METHODS;
-import static com.github.raphael.isvelin.Constants.AWAITILITY_METHOD_NAME;
+import static com.github.raphael.isvelin.Constants.AWAITILITY_METHOD_NAMES;
 import static com.github.raphael.isvelin.Constants.CLEANUP_BLOCK_TAG;
 import static com.github.raphael.isvelin.Constants.POLLING_CONDITIONS_METHODS;
 import static com.github.raphael.isvelin.Constants.EXPECT_BLOCK_TAG;
@@ -87,6 +87,8 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
     @Override
     public void visitMethodCallExpression(MethodCallExpression call) {
         ++nestingLevel;
+        final var previousLastCalledMethod = lastCalledMethod;
+        lastCalledMethod = call.getMethodAsString();
         if (call.getMethodAsString() != null && ASSERTING_METHODS.contains(call.getMethodAsString())) {
             blockStack.push(Type.ASSERTING_METHOD);
             currentAssertingMethod = call.getMethodAsString();
@@ -95,17 +97,19 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
             super.visitMethodCallExpression(call);
             blockStack.pop();
             --nestingLevel;
+            lastCalledMethod = previousLastCalledMethod;
             return;
         }
         if (call.getText().endsWith("thrown(Exception)")) {
             writeMatch(this, Severity.SMELL, call.getLineNumber(), "thrown(Exception) is too generic and can hide other exceptions");
             --nestingLevel;
+            lastCalledMethod = previousLastCalledMethod;
             return;
         }
         blockStack.push(Type.OTHER_METHOD);
         System.out.println(
                 formatLogPrefix() + "METHOD CALL - " + call.getMethod() + " - " + call.getText() + " - " + call.getMethodAsString());
-        lastCalledMethod = call.getMethodAsString();
+
         if (call.getMethodAsString() != null && METHODS_IMPLICIT_RETURN_ALLOWED.contains(call.getMethodAsString())) {
             System.out.println("(ignoring method: " + call.getMethodAsString() + ")");
         } else if (call.getArguments() instanceof ArgumentListExpression) {
@@ -115,6 +119,7 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
         } else {
             super.visitMethodCallExpression(call);
         }
+        lastCalledMethod = previousLastCalledMethod;
 
         blockStack.pop();
         --nestingLevel;
@@ -145,7 +150,7 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
     @Override
     public void visitClosureExpression(ClosureExpression expression) {
         ++nestingLevel;
-        System.out.println(formatLogPrefix() + "CLOSURE - " + expression.getText());
+        System.out.println(formatLogPrefix() + "CLOSURE - " + expression.getText() + " - (last called " + lastCalledMethod + ")");
         if (expression.getCode() instanceof BlockStatement bs) {
             closureStatements.push(bs.getStatements());
             for (Statement s : bs.getStatements()) {
@@ -159,7 +164,7 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
         } else if (expression.getCode() instanceof ExpressionStatement es
                            && es.getExpression() instanceof BinaryExpression be) {
             if ((currentNonAssertingMethodWithClosureParam != null && GROOVY_METHOD_WITH_NON_ASSERTING_CLOSURE_PARAMS_RETURNING_BOOLEAN.contains(currentNonAssertingMethodWithClosureParam))
-                        || lastCalledMethod.equals(AWAITILITY_METHOD_NAME)) {
+                        || (lastCalledMethod != null && AWAITILITY_METHOD_NAMES.contains(lastCalledMethod))) {
                 System.out.println("(acceptable implicit return property - " + currentNonAssertingMethodWithClosureParam + " - " + lastCalledMethod + " - " + be.getText() + ")");
                 writeMatch(this, Severity.MAYBE, be);
             } else {
@@ -186,8 +191,10 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
                 System.out.println("(Groovy method '" + mce.getMethodAsString() + "' called in then block or verify/with block, looks safe - not jumping in method)");
                 return true;
             } else {
-                writeMatch(this, Severity.WARN, mce.getLineNumber(), "boolean-returning Groovy method called outside of then block: " + expression.getText());
-                return true;
+                if (!ifEventuallyLogAndReturnTrue(expression.getExpression())) {
+                    writeMatch(this, Severity.WARN, mce.getLineNumber(), "boolean-returning Groovy method called outside of then block: " + expression.getText());
+                    return true;
+                }
             }
         }
         return false;
@@ -198,7 +205,7 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
         if (lastCalledMethod != null && POLLING_CONDITIONS_METHODS.contains(lastCalledMethod)) {
             final var msg = "Warning! Avoiding assert keyword in the clojure is only possible if the conditions object type is "
                 + "known during compilation (no 'def' on the left side), and only from Spock 2.0. "
-                + "Consider always using assert for safety.";
+                + "Consider always using assert for safety. Expression: " + e.getText();
             writeMatch(this, Severity.SMELL, e.getLineNumber(), msg);
             return true;
         }
@@ -257,7 +264,7 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
                             && closureStatements.peek().get(closureStatements.peek().size()-1).toString().contains(be.toString())) {
                         System.out.println("~ looks like an implicit return statement (binary expression) ~ " + currentNonAssertingMethodWithClosureParam + " ~ " + currentMethod + " ~ lmc " + lastCalledMethod + " ~");
                         if ((currentNonAssertingMethodWithClosureParam != null && GROOVY_METHOD_WITH_NON_ASSERTING_CLOSURE_PARAMS_RETURNING_BOOLEAN.contains(currentNonAssertingMethodWithClosureParam))
-                                || lastCalledMethod.equals(AWAITILITY_METHOD_NAME)) {
+                                || (lastCalledMethod != null && AWAITILITY_METHOD_NAMES.contains(lastCalledMethod))) {
                             writeMatch(this, Severity.MAYBE, be);
                         } else {
                             if (!ifEventuallyLogAndReturnTrue(be)) {
