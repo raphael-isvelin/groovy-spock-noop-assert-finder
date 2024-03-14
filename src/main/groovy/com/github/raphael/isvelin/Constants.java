@@ -11,6 +11,7 @@ public class Constants {
     public static final List<String> POLLING_CONDITIONS_METHODS = List.of("eventually", "within");
     public static final List<String> ASSERTJ_METHODS = List.of("assertThat", "assertThatThrownBy", "assertThatObject", "assertWith");
     public static final List<String> AWAITILITY_METHOD_NAMES = List.of("await", "until"); // just hardcoding some more edge cases :shrug:
+    public static final List<String> ALLOW_IMPLICIT_BINARY_EXPRESSION_RETURN_STATEMENTS = List.of("interceptNewTasks");
 
     public static final String GIVEN_BLOCK_TAG = "<!GIVEN block!>";
     public static final String WHEN_BLOCK_TAG = "<!WHEN block!>";

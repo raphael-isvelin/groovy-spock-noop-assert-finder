@@ -1,5 +1,6 @@
 package com.github.raphael.isvelin;
 
+import static com.github.raphael.isvelin.Constants.ALLOW_IMPLICIT_BINARY_EXPRESSION_RETURN_STATEMENTS;
 import static com.github.raphael.isvelin.Constants.ASSERTING_METHODS;
 import static com.github.raphael.isvelin.Constants.ASSERTJ_METHODS;
 import static com.github.raphael.isvelin.Constants.AWAITILITY_METHOD_NAMES;
@@ -33,6 +34,7 @@ import org.codehaus.groovy.ast.expr.ClosureExpression;
 import org.codehaus.groovy.ast.expr.ConstantExpression;
 import org.codehaus.groovy.ast.expr.ConstructorCallExpression;
 import org.codehaus.groovy.ast.expr.Expression;
+import org.codehaus.groovy.ast.expr.LambdaExpression;
 import org.codehaus.groovy.ast.expr.ListExpression;
 import org.codehaus.groovy.ast.expr.MapExpression;
 import org.codehaus.groovy.ast.expr.MethodCallExpression;
@@ -178,6 +180,11 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
                            && es.getExpression() instanceof NotExpression ne) {
             System.out.println("~ looks like another implicit ! return statement ~");
             writeMatch(this, Severity.MAYBE, ne);
+        } else if (expression instanceof LambdaExpression le
+                && le.getCode() instanceof ExpressionStatement es
+                && (es.getExpression() instanceof MethodCallExpression || es.getExpression() instanceof BinaryExpression)
+                && (lastCalledMethod != null && AWAITILITY_METHOD_NAMES.contains(lastCalledMethod))) {
+            writeMatch(this, Severity.MAYBE, es.getExpression());
         } else {
             System.out.println("UNEXPECTED: code of closure isn't BlockStatement: " + expression);
             super.visitClosureExpression(expression);
@@ -271,7 +278,11 @@ public class SpockVisitor extends ClassCodeVisitorSupport {
                             writeMatch(this, Severity.MAYBE, be);
                         } else {
                             if (!ifEventuallyLogAndReturnTrue(be)) {
-                                writeMatch(this, Severity.WARN, be);
+                                if (lastCalledMethod != null && ALLOW_IMPLICIT_BINARY_EXPRESSION_RETURN_STATEMENTS.contains(lastCalledMethod)) {
+                                    writeMatch(this, Severity.MAYBE, be);
+                                } else {
+                                    writeMatch(this, Severity.WARN, be);
+                                }
                             }
                         }
                     } else {

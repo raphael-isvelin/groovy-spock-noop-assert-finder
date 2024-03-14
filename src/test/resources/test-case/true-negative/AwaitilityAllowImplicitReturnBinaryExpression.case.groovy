@@ -32,6 +32,8 @@ class SomeTestCaseAwaitility extends Specification {
             await()
                 .atMost(5, SECONDS)
                 .until(() -> getTaxesByTransactionId(321L, TransactionType.CASHBACK_PAYOUT).size() == 1)
+            await().until(() -> repo.findBySomethingId(SOMETHING_ID).isPresent())
+            await().until(() -> { repo.findBySomethingId(SOMETHING_ID).isPresent(); 1 == 2} )
     }
 }
 //</code>
@@ -44,4 +46,7 @@ class SomeTestCaseAwaitility extends Specification {
 >>>ERROR,AwaitilityAllowImplicitReturnBinaryExpression.case.groovy,-575989599:AwaitilityAllowImplicitReturnBinaryExpression.case.groovy:awaitility assert methods - true negative,25,OTHER_METHOD,BinaryExpression,(2 == 4)
 >>>MAYBE,AwaitilityAllowImplicitReturnBinaryExpression.case.groovy,-575989599:AwaitilityAllowImplicitReturnBinaryExpression.case.groovy:awaitility assert methods - true negative,26,OTHER_METHOD,BinaryExpression,(1 == 1)
 >>>MAYBE,AwaitilityAllowImplicitReturnBinaryExpression.case.groovy,-575989599:AwaitilityAllowImplicitReturnBinaryExpression.case.groovy:awaitility assert methods - true negative,31,OTHER_METHOD,BinaryExpression,(this.getTaxesByTransactionId(321<!COMMA!> TransactionType.CASHBACK_PAYOUT).size() == 1)
+>>>MAYBE,AwaitilityAllowImplicitReturnBinaryExpression.case.groovy,-575989599:AwaitilityAllowImplicitReturnBinaryExpression.case.groovy:awaitility assert methods - true negative,32,OTHER_METHOD,MethodCallExpression,repo.findBySomethingId(SOMETHING_ID).isPresent()
+>>>WARN,AwaitilityAllowImplicitReturnBinaryExpression.case.groovy,-575989599:AwaitilityAllowImplicitReturnBinaryExpression.case.groovy:awaitility assert methods - true negative,33,OTHER_METHOD,MethodCallExpression,repo.findBySomethingId(SOMETHING_ID).isPresent()
+>>>MAYBE,AwaitilityAllowImplicitReturnBinaryExpression.case.groovy,-575989599:AwaitilityAllowImplicitReturnBinaryExpression.case.groovy:awaitility assert methods - true negative,33,OTHER_METHOD,BinaryExpression,(1 == 2)
 </expected>*/

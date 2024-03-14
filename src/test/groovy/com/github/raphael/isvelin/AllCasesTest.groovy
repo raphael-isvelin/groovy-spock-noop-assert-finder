@@ -49,6 +49,7 @@ class AllCasesTest extends Specification {
                 "AwaitilityAllowImplicitReturnBinaryExpression.case.groovy",
                 "ClosureParamsCheckOfMocksWithNoInvocationCountCheckAreIgnored.case.groovy",
                 "AssertNotNeededInAssertingBlockEvenInConditionOrLoop.case.groovy",
+                "ExcludingInterceptNewTasks.case.groovy",
             ]
     }
 
